@@ -108,3 +108,6 @@ venv.bak/
 # End of https://www.gitignore.io/api/python
 # Ignore favicons
 favicon.ico
+
+config/*
+!config/defaults.cnf
