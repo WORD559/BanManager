@@ -24,7 +24,7 @@ class API(object):
         # The start of the URL is the base route. This is defined when calling this function
         # Next is the function requested
         # Function arguments will be given in the request
-        @app.route(route+"/<f>")
+        @app.route(route+"/<f>",methods=["GET","POST"])
         def main(f):
             if not self.functions.has_key(f):
                 return Response(status=404) # 404 if function does not exist
