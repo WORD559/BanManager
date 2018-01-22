@@ -3,3 +3,4 @@ DATABASE_NAME = BanManager
 MAX_USERNAME_CHARS = 64 # This gives enough room for school usernames, though can be increased if necessary
 MAX_FORENAME_LENGTH = 16
 MAX_SURNAME_LENGTH = 32
+MAX_LOGIN_LENGTH = 20
