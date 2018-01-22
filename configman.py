@@ -12,3 +12,8 @@ def read(config_file):
             lines[lines.index(line)] = line[:line.index("#")] # strip comments
     d = dict([[val.strip(" ") for val in line.split("=")] for line in lines])
     return d
+
+def write(config_file,d):
+    f = open(config_file,"w")
+    data = d.items()
+    d = "\n".join([" = ".join([str(x) for x in line]) for line in data])
