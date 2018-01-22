@@ -69,48 +69,43 @@ def initialise(request):
                              passwd=passwd,
                              db=DATABASE_NAME)
         cur = db.cursor()
-        try:
-            cur.execute("CREATE TABLE Students "+\
-                        "(Username VARCHAR("+str(MAX_USERNAME_CHARS)+") PRIMARY KEY NOT NULL,"+\
-                        "Forename VARCHAR("+str(MAX_FORENAME_LENGTH)+"),"+\
-                        "Surname VARCHAR("+str(MAX_SURNAME_LENGTH)+"));")
-            db.commit()
-        except MySQLdb.ProgrammingError:
-            print "Table 'Students' already exists!"
-        try:
-            cur.execute("CREATE TABLE Incidents "+\
-                        "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                        "Username VARCHAR("+str(MAX_USERNAME_CHARS)+") NOT NULL,"+\
-                        "Report TEXT,"+\
-                        "Date DATE,"+\
-                        "FOREIGN KEY (Username) REFERENCES Students(Username));")
-            db.commit()
-        except MySQLdb.ProgrammingError:
-            print "Table 'Incidents' already exists!"
-        try:
-            cur.execute("CREATE TABLE Sanctions "+\
-                        "(SanctionID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                        "StartDate DATE,"+\
-                        "EndDate DATE,"+\
-                        "Sanction TEXT,"+\
-                        "IncidentID INTEGER,"+\
-                        "FOREIGN KEY (IncidentID) REFERENCES Incidents(IncidentID));")
-            db.commit()
-        except MySQLdb.ProgrammingError:
-            print "Table 'Sanctions' already exists!"
-        try:
-            cur.execute("CREATE TABLE Accounts "+\
-                        "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") PRIMARY KEY NOT NULL,"+\
-                        "PasswordHash BINARY(32) NOT NULL,"+\
-                        "PublicKey TEXT NOT NULL,"+\
-                        "PrivateKey BLOB NOT NULL,"+\
-                        "AccountType INTEGER NOT NULL,"+\
-                        "Email VARCHAR(254));")
-            #TEXT is used as these fields exceed 255 chars
-            #254 is the standard max email length
-            db.commit()
-        except MySQLdb.ProgrammingError:
-            print "Table 'Accounts' already exists!"
+
+        cur.execute("CREATE TABLE Students "+\
+                    "(Username VARCHAR("+str(MAX_USERNAME_CHARS)+") PRIMARY KEY NOT NULL,"+\
+                    "Forename VARCHAR("+str(MAX_FORENAME_LENGTH)+"),"+\
+                    "Surname VARCHAR("+str(MAX_SURNAME_LENGTH)+"));")
+        db.commit()
+
+        cur.execute("CREATE TABLE Incidents "+\
+                    "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
+                    "Username VARCHAR("+str(MAX_USERNAME_CHARS)+") NOT NULL,"+\
+                    "Report TEXT,"+\
+                    "Date DATE,"+\
+                    "FOREIGN KEY (Username) REFERENCES Students(Username));")
+        db.commit()
+
+        cur.execute("CREATE TABLE Sanctions "+\
+                    "(SanctionID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
+                    "StartDate DATE,"+\
+                    "EndDate DATE,"+\
+                    "Sanction TEXT,"+\
+                    "IncidentID INTEGER,"+\
+                    "FOREIGN KEY (IncidentID) REFERENCES Incidents(IncidentID));")
+        db.commit()
+
+        cur.execute("CREATE TABLE Accounts "+\
+                    "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") PRIMARY KEY NOT NULL,"+\
+                    "PasswordHash BINARY(32) NOT NULL,"+\
+                    "PublicKey TEXT NOT NULL,"+\
+                    "PrivateKey BLOB NOT NULL,"+\
+                    "AccountType INTEGER NOT NULL,"+\
+                    "Email VARCHAR(254));")
+        #TEXT is used as these fields exceed 255 chars
+        #The hash can be stored efficiently in a BINARY field
+        #The private key is best stored in a BLOB. This allows the AES-enrypted private key to be stored as a binary object so as to be space-efficient. Also very compatible with the AES_ENCRYPT function of MySQL
+        #254 is the standard max email length
+        db.commit()
+
         #try:
         cur.execute("CREATE TABLE FileKeys "+\
                     "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") NOT NULL,"+\
