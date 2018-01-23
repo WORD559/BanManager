@@ -56,7 +56,17 @@ def initialise(request):
             hostname = request.form["host"]
     except Exception,e:
         return json.dumps({"status":"BAD","error":"Failed to load config!","data":str(e)})
-
+    try:
+        # Firstly, we want to generate an RSA key for the server
+        # This will be used to encrypt user cookies
+        # While security is slightly compromised if the server is compromised (if the hacker also has access to a valid cookie, they could decrypt this to gain access to the database)
+        # This is a very minor drop in security, and as soon as the breach is detected it can be solved by generating a new server key
+        server_rsa = RSA.generate(2048)
+        f = open("config/key.rsa","w")
+        f.write(server_rsa.exportKey())
+        f.close()
+    except Exception,e:
+        return json.dumps({"status":"BAD","error":"Failed to generate key!","data":str(e)})
     try:
         # Log into the server and create the new database
         try:
@@ -80,7 +90,8 @@ def initialise(request):
 
         #Username, forename, surname are encrypted
         cur.execute("CREATE TABLE Students "+\
-                    "(Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") PRIMARY KEY NOT NULL,"+\
+                    "(UserID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"
+                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
                     "Forename VARBINARY("+str(get_AES_size(MAX_FORENAME_LENGTH))+"),"+\
                     "Surname VARBINARY("+str(get_AES_size(MAX_SURNAME_LENGTH))+"));")
         db.commit()
@@ -88,12 +99,13 @@ def initialise(request):
         #Username, report are encrypted
         cur.execute("CREATE TABLE Incidents "+\
                     "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
+                    "UserID INTEGER NOT NULL,"+\
                     "Report BLOB,"+\
                     "Date DATE,"+\
-                    "FOREIGN KEY (Username) REFERENCES Students(Username));")
+                    "FOREIGN KEY (UserID) REFERENCES Students(UserID));")
         db.commit()
 
+        #Sanction is encrypted
         cur.execute("CREATE TABLE Sanctions "+\
                     "(SanctionID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
                     "StartDate DATE,"+\
@@ -162,9 +174,13 @@ def initialise(request):
 
     #This key can then be used for encrypting data in the database
     
-    try:
+    try: # The person setting up the system should be aware that their SQL username and password will be stored as these are essential to the function of the program
         configman.write("config/SQLusers.cnf",
-                        {"initialised":"1","SQLadmin":user,"host":hostname})
+                        {"initialised":"1",
+                         "SQLaccount":user,
+                         "SQLpassword":passwd,
+                         "host":hostname,
+                         "DATABASE_NAME":DATABASE_NAME})
     except Exception,e:
         return json.dumps({"status":"BAD","error":"Failed to write config!","data":str(e)})
     return json.dumps({"status":"OK","data":{"initialised":True,"password":adminpw}})
@@ -203,4 +219,59 @@ def add_new_account(username,password,db):
     db.commit()
     return key
 
+# The login procedure will generate the AES key required to decrypt the user's private key
+# This will then be encrypted using the server key, and a HTTP header is sent to instruct the browser to store it in a cookie
+# Subsequent requests to the server will contain this cookie and can be decrypted, allowing the server to decrypt the private key and access the data
+@api.route("login")
+def user_login(request):
+    try:
+        sql_cfg = configman.read("config/SQLusers.cnf")
+    except:
+        return json.dumps({"status":"BAD","error":"Failed to load config."})
+    if not (request.form.has_key("user") and request.form.has_key("pass")):
+        return json.dumps({"status":"BAD","error":"Missing username and/or password."})
+    else:
+        user = str(request.form["user"].lower())
+        passwd = str(request.form["pass"])
+
+    # Log into the SQL database
+    db = MySQLdb.connect(host=sql_cfg["host"],
+                         user=sql_cfg["SQLaccount"],
+                         passwd=sql_cfg["SQLpassword"],
+                         db=sql_cfg["DATABASE_NAME"])
+
+    # Hash the password provided
+    hasher = SHA256.new()
+    hasher.update(passwd)
+    h = hasher.digest()
+
+    # Get the hash stored in the database and compare the hashes
+    cur = db.cursor()
+    # If no results are returned, the account doesn't exist
+    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '"+sql_sanitise(user)+"';") != 1:
+        return json.dumps({"status":"BAD","error":"Incorrect username/password."})
+    server_h = cur.fetchall()[0][0]
+
+    # If the hashes are not equal, the password is incorrect
+    if h != server_h:
+        return json.dumps({"status":"BAD","error":"Incorrect username/password."})
+    
+    # Now we must generate the key for decrypting the private key
+    hasher = SHA256.new()
+    hasher.update(user+passwd+h)
+    aes_key = hasher.digest()
+
+    # Now we have to load the server RSA key so we can encrypt our aes key
+    f = open("config/key.rsa")
+    server_rsa = RSA.importKey(f.read())
+    f.close()
+
+    # This will encrypt our key. We also encode it as a hexadecimal string to make sending it "cleaner"
+    aes_key = server_rsa.encrypt(aes_key,0)[0].encode("hex")
+    
+    # Now we set up a response that will instruct the browser to store this cookie
+    r = app.make_response(json.dumps({"status":"OK"}))
+    r.set_cookie("API_SESSION",value=aes_key)
+    return r
+    
 api.start()
