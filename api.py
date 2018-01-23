@@ -136,37 +136,8 @@ def initialise(request):
     #First, a password is needed
     chars = string.letters + string.digits + string.punctuation
     adminpw = "".join([chars[random.randrange(0,len(chars))] for i in range(12)]) # generate a secure admin password
-    hasher = SHA256.new()
-    hasher.update(adminpw)
-    pwhash = hasher.digest() # This generates our password hash to validate the password
 
-    #Now we hash the username + the password + the hash to make an AES key
-    hasher = SHA256.new()
-    hasher.update("admin"+adminpw+pwhash)
-    aes_key = hasher.digest()
-
-    #Now we generate a new RSA key for this user
-    key = RSA.generate(2048)
-
-    #And export the private key, appending NULL to make it compatible with AES
-    exported = key.exportKey()
-    while len(exported) % 16 != 0:
-        exported += "\0"
-
-    #This is then encrypted by the MySQL server using AES_ENCRYPT
-    #It can then be decrypted again using AES_DECRYPT
-
-    #The hash is sanitised
-    s_pwhash = sql_sanitise(pwhash)
-
-    cur = db.cursor()
-    cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
-                "('admin',\n"+\
-                "'"+s_pwhash+"',\n"+\
-                "'"+key.publickey().exportKey()+"',\n"+\
-                "AES_ENCRYPT('"+exported+"','"+aes_key+"'),\n"+\
-                "0)")
-    db.commit()
+    key = add_new_account("admin",adminpw,db)
 
     #After this, we need to generate a random AES key for the database
     #The random range I have chosen generates a 256 bit key
@@ -197,5 +168,39 @@ def initialise(request):
     except Exception,e:
         return json.dumps({"status":"BAD","error":"Failed to write config!","data":str(e)})
     return json.dumps({"status":"OK","data":{"initialised":True,"password":adminpw}})
+
+def add_new_account(username,password,db):
+    hasher = SHA256.new()
+    hasher.update(password)
+    pwhash = hasher.digest() # This generates our password hash to validate the password
+
+    #Now we hash the username + the password + the hash to make an AES key
+    hasher = SHA256.new()
+    hasher.update(username+password+pwhash)
+    aes_key = hasher.digest()
+
+    #Now we generate a new RSA key for this user
+    key = RSA.generate(2048)
+
+    #And export the private key, appending NULL to make it compatible with AES
+    exported = key.exportKey()
+    while len(exported) % 16 != 0:
+        exported += "\0"
+
+    #This is then encrypted by the MySQL server using AES_ENCRYPT
+    #It can then be decrypted again using AES_DECRYPT
+
+    #The hash is sanitised
+    s_pwhash = sql_sanitise(pwhash)
+
+    cur = db.cursor()
+    cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
+                "('admin',\n"+\
+                "'"+s_pwhash+"',\n"+\
+                "'"+key.publickey().exportKey()+"',\n"+\
+                "AES_ENCRYPT('"+exported+"','"+aes_key+"'),\n"+\
+                "0)")
+    db.commit()
+    return key
 
 api.start()
