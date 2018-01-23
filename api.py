@@ -14,6 +14,12 @@ from Crypto.Cipher import AES
 app = apiframework.app
 api = apiframework.API()
 
+def sql_sanitise(data):
+    return data.replace("\\","\\\\").replace("'","\\'").replace(";","\\;").replace("_","\\_").replace("%","\\%")
+
+def get_AES_size(data_size):
+    return 16*((data_size/16)+1)
+
 @api.route("status")
 def status():
     data = {}
@@ -70,16 +76,20 @@ def initialise(request):
                              db=DATABASE_NAME)
         cur = db.cursor()
 
+        #AES size = 16*((len(string)/16)+1)
+
+        #Username, forename, surname are encrypted
         cur.execute("CREATE TABLE Students "+\
-                    "(Username VARCHAR("+str(MAX_USERNAME_CHARS)+") PRIMARY KEY NOT NULL,"+\
-                    "Forename VARCHAR("+str(MAX_FORENAME_LENGTH)+"),"+\
-                    "Surname VARCHAR("+str(MAX_SURNAME_LENGTH)+"));")
+                    "(Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") PRIMARY KEY NOT NULL,"+\
+                    "Forename VARBINARY("+str(get_AES_size(MAX_FORENAME_LENGTH))+"),"+\
+                    "Surname VARBINARY("+str(get_AES_size(MAX_SURNAME_LENGTH))+"));")
         db.commit()
 
+        #Username, report are encrypted
         cur.execute("CREATE TABLE Incidents "+\
                     "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                    "Username VARCHAR("+str(MAX_USERNAME_CHARS)+") NOT NULL,"+\
-                    "Report TEXT,"+\
+                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
+                    "Report BLOB,"+\
                     "Date DATE,"+\
                     "FOREIGN KEY (Username) REFERENCES Students(Username));")
         db.commit()
@@ -110,10 +120,11 @@ def initialise(request):
         cur.execute("CREATE TABLE FileKeys "+\
                     "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") NOT NULL,"+\
                     "FileID VARCHAR("+str(MAX_USERNAME_CHARS)+") NOT NULL,"+\
-                    "DecryptionKey TEXT NOT NULL,"+\
+                    "DecryptionKey BLOB NOT NULL,"+\
                     "PRIMARY KEY (Login, FileID));")
         # File will either be a student's username (for their photo) or a short reference meaning the database
         # Always 256 because 2048 bit RSA key
+        # BLOB must be used because an RSA encrypted value is 256 bytes (exceeding the BINARY maximum of 255)
         db.commit()
         #except MySQLdb.ProgrammingError:
         #    print "Table 'FileKeys' already exists!"
@@ -129,9 +140,9 @@ def initialise(request):
     hasher.update(adminpw)
     pwhash = hasher.digest() # This generates our password hash to validate the password
 
-    #Now we hash this hash + the original password + the username to make an AES key
+    #Now we hash the username + the password + the hash to make an AES key
     hasher = SHA256.new()
-    hasher.update("Admin"+adminpw+pwhash)
+    hasher.update("admin"+adminpw+pwhash)
     aes_key = hasher.digest()
 
     #Now we generate a new RSA key for this user
@@ -145,15 +156,40 @@ def initialise(request):
     #This is then encrypted by the MySQL server using AES_ENCRYPT
     #It can then be decrypted again using AES_DECRYPT
 
+    #The hash is sanitised
+    s_pwhash = sql_sanitise(pwhash)
 
     cur = db.cursor()
     cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
-                "('Admin',\n"+\
-                "'"+pwhash+"',\n"+\
+                "('admin',\n"+\
+                "'"+s_pwhash+"',\n"+\
                 "'"+key.publickey().exportKey()+"',\n"+\
                 "AES_ENCRYPT('"+exported+"','"+aes_key+"'),\n"+\
                 "0)")
     db.commit()
+
+    #After this, we need to generate a random AES key for the database
+    #The random range I have chosen generates a 256 bit key
+
+    database_key = random.randrange(57896044618658097711785492504343953926634992332820282019728792003956564819968,
+                                    115792089237316195423570985008687907853269984665640564039457584007913129639936)
+    
+    #This key is converted to hexadecimal, then encrypted with the administrator's key
+    encrypted_key = key.encrypt(hex(database_key)[2:].replace("L",""),0)[0]
+
+    #Make sure to sanitise
+    s_encrypted_key = sql_sanitise(encrypted_key)
+
+    #This must then be stored in the admin's FileKeys
+    #We will identify that this is a database and not a username by including a "+" at the start of the name. This character is illegal in Windows usernames.
+    cur = db.cursor()
+    cur.execute("INSERT INTO FileKeys VALUES ("+\
+                "'admin',\n"+\
+                "'+database',\n"+\
+                "'"+str(s_encrypted_key)+"');")
+    db.commit()
+
+    #This key can then be used for encrypting data in the database
     
     try:
         configman.write("config/SQLusers.cnf",
