@@ -82,6 +82,7 @@ def initialise(request):
                                  passwd=passwd)
             cur = db.cursor()
             cur.execute("CREATE DATABASE "+sql_sanitise(DATABASE_NAME)+";")
+            cur.close()
             db.commit()
             db.close()
         except MySQLdb.ProgrammingError:
@@ -98,8 +99,7 @@ def initialise(request):
 
         #Username, forename, surname are encrypted
         cur.execute("CREATE TABLE Students "+\
-                    "(UserID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"
-                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
+                    "(Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") PRIMARY KEY NOT NULL,"+\
                     "Forename VARBINARY("+str(get_AES_size(MAX_FORENAME_LENGTH))+"),"+\
                     "Surname VARBINARY("+str(get_AES_size(MAX_SURNAME_LENGTH))+"));")
         db.commit()
@@ -107,10 +107,10 @@ def initialise(request):
         #Username, report are encrypted
         cur.execute("CREATE TABLE Incidents "+\
                     "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                    "UserID INTEGER NOT NULL,"+\
+                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
                     "Report BLOB,"+\
                     "Date DATE,"+\
-                    "FOREIGN KEY (UserID) REFERENCES Students(UserID));")
+                    "FOREIGN KEY (Username) REFERENCES Students(Username));")
         db.commit()
 
         #Sanction is encrypted
@@ -146,6 +146,7 @@ def initialise(request):
         # Always 256 because 2048 bit RSA key
         # BLOB must be used because an RSA encrypted value is 256 bytes (exceeding the BINARY maximum of 255)
         db.commit()
+        cur.close()
         #except MySQLdb.ProgrammingError:
         #    print "Table 'FileKeys' already exists!"
         
@@ -173,12 +174,17 @@ def initialise(request):
 
     #This must then be stored in the admin's FileKeys
     #We will identify that this is a database and not a username by including a "+" at the start of the name. This character is illegal in Windows usernames.
+    db = MySQLdb.connect(host=hostname,
+                             user=user,
+                             passwd=passwd,
+                             db=DATABASE_NAME)
     cur = db.cursor()
     cur.execute("INSERT INTO FileKeys VALUES ("+\
                 "'admin',\n"+\
                 "'+database',\n"+\
                 "'"+str(s_encrypted_key)+"');")
     db.commit()
+    cur.close()
     db.close()
 
     #This key can then be used for encrypting data in the database
@@ -225,6 +231,7 @@ def add_new_account(username,password,db):
                 "'"+key.publickey().exportKey()+"',\n"+\
                 "AES_ENCRYPT('"+exported+"','"+sql_sanitise(aes_key)+"'),\n"+\
                 "0)")
+    cur.close()
     db.commit()
     db.close()
     return key
@@ -261,6 +268,7 @@ def user_login(request):
     if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '"+sql_sanitise(user)+"';") != 1:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
     server_h = cur.fetchall()[0][0]
+    cur.close()
     db.close()
 
     # If the hashes are not equal, the password is incorrect
@@ -318,10 +326,77 @@ def get_private_key(request):
         return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
     try:
         rsa = RSA.importKey(cur.fetchall()[0][0])
+        cur.close()
         db.close()
     except ValueError:
+        cur.close()
         db.close()
         return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
     return (True,rsa)
+
+@api.route("add_new_student")
+def add_new_student(request):
+    try:
+        sql_cfg = configman.read("config/SQLusers.cnf")
+    except:
+        return json.dumps({"status":"BAD","error":"Failed to load config."})
+    if not request.cookies.has_key("Username"):
+        return json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."})
+    user = str(request.cookies.get("Username"))
+    if not (request.form.has_key("user")):
+        return json.dumps({"status":"BAD","error":"Missing username."})
+    else:
+        student = str(request.form["user"].lower())
+    if request.form.has_key("forename"):
+        forename = str(request.form["forename"])
+    else:
+        forename = None
+    if request.form.has_key("surname"):
+        surname = str(request.form["surname"])
+    else:
+        surname = None
+
+    # Get the user's private key.
+    key = get_private_key(request)
+    if key[0] == False:
+        return key[1]
+    key = key[1]
+
+    # Log into the database and retrieve the encrypted AES key for the database
+    db = MySQLdb.connect(host=sql_cfg["host"],
+                         user=sql_cfg["SQLaccount"],
+                         passwd=sql_cfg["SQLpassword"],
+                         db=sql_cfg["DATABASE_NAME"])
+    cur = db.cursor()
+    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '"+sql_sanitise(user)+"';") != 1:
+        return json.dumps({"status":"BAD","error":"No access to file."})
+    e_aes_key = cur.fetchall()[0][0]
+
+    # Decrypt the key
+    aes_key = key.decrypt(e_aes_key)
+
+    # Generate the query -- no point inserting a forename/surname if we don't know it
+    data = {"forename":"","surname":""}
+    if forename != None:
+        data["forename"] = ",Forename"
+    if surname != None:
+        data["surname"] = ",Surname"
+    query = "INSERT INTO Students(Username{forename}{surname}) VALUES (AES_ENCRYPT('".format(**data)
+    data = {"key":sql_sanitise(aes_key),"forename":"","surname":""}
+    if forename != None:
+        data["forename"] = ",AES_ENCRYPT('"+sql_sanitise(forename)+"','"+sql_sanitise(aes_key)+"')"
+    if surname != None:
+        data["surname"] = ",AES_ENCRYPT('"+sql_sanitise(surname)+"','"+sql_sanitise(aes_key)+"')"
+    query += sql_sanitise(student)+"','{key}'){forename}{surname});".format(**data)
+
+    cur = db.cursor()
+    try:
+        cur.execute(query)
+    except MySQLdb.IntegrityError:
+        return json.dumps({"status":"BAD","error":"User already exists!"})
+    db.commit()
+    cur.close()
+    db.close()
+    return json.dumps({"status":"OK"})
     
 api.start()
