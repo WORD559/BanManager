@@ -272,6 +272,9 @@ def user_login(request):
     # Now we set up a response that will instruct the browser to store this cookie
     r = app.make_response(json.dumps({"status":"OK"}))
     r.set_cookie("API_SESSION",value=aes_key)
+    r.set_cookie("Username",value=user)
     return r
+
+
     
 api.start()
