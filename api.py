@@ -14,12 +14,16 @@ from Crypto.Cipher import AES
 app = apiframework.app
 api = apiframework.API()
 
+# Escapes certain characters that would otherwise cause SQL errors
 def sql_sanitise(data):
     return data.replace("\\","\\\\").replace("'","\\'").replace(";","\\;").replace("_","\\_").replace("%","\\%")
 
+# Returns the size an string of length `data_size` would be if padded and AES encrypted
 def get_AES_size(data_size):
     return 16*((data_size/16)+1)
 
+# Allows a client to check the status of the database
+# Good for things such as setup procedures
 @api.route("status")
 def status():
     data = {}
@@ -31,6 +35,9 @@ def status():
         data["initialised"] = True
     return json.dumps({"status":"OK","data":data})
 
+# Requires an administrative user and password for the SQL server
+# You could use the root user, but I would recommend using a dedicated user
+# This user can be limited just to this database, which would make your server more secure
 @api.route("init")
 def initialise(request):
     if "SQLusers.cnf" in os.listdir("config"):
@@ -74,8 +81,9 @@ def initialise(request):
                                  user=user,
                                  passwd=passwd)
             cur = db.cursor()
-            cur.execute("CREATE DATABASE "+DATABASE_NAME+";")
+            cur.execute("CREATE DATABASE "+sql_sanitise(DATABASE_NAME)+";")
             db.commit()
+            db.close()
         except MySQLdb.ProgrammingError:
             print "Database already exists!"
 
@@ -171,6 +179,7 @@ def initialise(request):
                 "'+database',\n"+\
                 "'"+str(s_encrypted_key)+"');")
     db.commit()
+    db.close()
 
     #This key can then be used for encrypting data in the database
     
@@ -214,9 +223,10 @@ def add_new_account(username,password,db):
                 "('admin',\n"+\
                 "'"+s_pwhash+"',\n"+\
                 "'"+key.publickey().exportKey()+"',\n"+\
-                "AES_ENCRYPT('"+exported+"','"+aes_key+"'),\n"+\
+                "AES_ENCRYPT('"+exported+"','"+sql_sanitise(aes_key)+"'),\n"+\
                 "0)")
     db.commit()
+    db.close()
     return key
 
 # The login procedure will generate the AES key required to decrypt the user's private key
@@ -251,6 +261,7 @@ def user_login(request):
     if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '"+sql_sanitise(user)+"';") != 1:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
     server_h = cur.fetchall()[0][0]
+    db.close()
 
     # If the hashes are not equal, the password is incorrect
     if h != server_h:
@@ -275,6 +286,42 @@ def user_login(request):
     r.set_cookie("Username",value=user)
     return r
 
+# It would be advantageous to write a function for getting the user's private key
+# This is an essential part of accessing the database
+def get_private_key(request):
+    try:
+        sql_cfg = configman.read("config/SQLusers.cnf")
+    except:
+        return (False,json.dumps({"status":"BAD","error":"Failed to load config."}))
+    
+    # Get the username and encrypted AES key from the cookies
+    username = str(request.cookies.get("Username"))
+    e_key = request.cookies.get("API_SESSION").decode("hex")
+    if username == "None" or e_key == None:
+        return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
+    
+    # Load the server RSA key
+    f = open("config/key.rsa")
+    server_rsa = RSA.importKey(f.read())
+    f.close()
 
+    # Decrypt the AES key
+    key = server_rsa.decrypt(e_key)
+
+    # Connect to the database
+    db = MySQLdb.connect(host=sql_cfg["host"],
+                         user=sql_cfg["SQLaccount"],
+                         passwd=sql_cfg["SQLpassword"],
+                         db=sql_cfg["DATABASE_NAME"])
+    cur = db.cursor()
+    if cur.execute("SELECT AES_DECRYPT(PrivateKey,'"+sql_sanitise(key)+"') FROM Accounts WHERE Login = '"+sql_sanitise(username)+"';") != 1:
+        return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
+    try:
+        rsa = RSA.importKey(cur.fetchall()[0][0])
+        db.close()
+    except ValueError:
+        db.close()
+        return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
+    return (True,rsa)
     
 api.start()
