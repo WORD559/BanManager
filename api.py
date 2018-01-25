@@ -335,6 +335,29 @@ def get_private_key(request):
         return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
     return (True,rsa)
 
+# We can use the function from above to construct a function for getting the AES key of a file
+def get_file_key(user,RSA_key,File="+database"):
+    try:
+        sql_cfg = configman.read("config/SQLusers.cnf")
+    except:
+        return json.dumps({"status":"BAD","error":"Failed to load config."})
+
+    # Log into the database and retrieve the encrypted AES key for the database
+    db = MySQLdb.connect(host=sql_cfg["host"],
+                         user=sql_cfg["SQLaccount"],
+                         passwd=sql_cfg["SQLpassword"],
+                         db=sql_cfg["DATABASE_NAME"])
+    cur = db.cursor()
+    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
+        return json.dumps({"status":"BAD","error":"No access to file."})
+    e_aes_key = cur.fetchall()[0][0]
+    cur.close()
+    db.close()
+
+    # Decrypt the key
+    aes_key = RSA_key.decrypt(e_aes_key)
+    return aes_key
+
 @api.route("add_new_student")
 def add_new_student(request):
     try:
@@ -363,18 +386,8 @@ def add_new_student(request):
         return key[1]
     key = key[1]
 
-    # Log into the database and retrieve the encrypted AES key for the database
-    db = MySQLdb.connect(host=sql_cfg["host"],
-                         user=sql_cfg["SQLaccount"],
-                         passwd=sql_cfg["SQLpassword"],
-                         db=sql_cfg["DATABASE_NAME"])
-    cur = db.cursor()
-    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
-        return json.dumps({"status":"BAD","error":"No access to file."})
-    e_aes_key = cur.fetchall()[0][0]
-
-    # Decrypt the key
-    aes_key = key.decrypt(e_aes_key)
+    # Get the database AES key
+    aes_key = get_file_key(user,key)
 
     # Generate the query -- no point inserting a forename/surname if we don't know it
     data = {"forename":"","surname":""}
@@ -390,6 +403,10 @@ def add_new_student(request):
         data["surname"] = ",AES_ENCRYPT('"+sql_sanitise(surname)+"','"+sql_sanitise(aes_key)+"')"
     query += sql_sanitise(student)+"','{key}'){forename}{surname});".format(**data)
 
+    db = MySQLdb.connect(host=sql_cfg["host"],
+                         user=sql_cfg["SQLaccount"],
+                         passwd=sql_cfg["SQLpassword"],
+                         db=sql_cfg["DATABASE_NAME"])
     cur = db.cursor()
     try:
         cur.execute(query)
