@@ -81,7 +81,7 @@ def initialise(request):
                                  user=user,
                                  passwd=passwd)
             cur = db.cursor()
-            cur.execute("CREATE DATABASE "+sql_sanitise(DATABASE_NAME)+";")
+            cur.execute("CREATE DATABASE {database};".format(**{"database":sql_sanitise(DATABASE_NAME)}))
             cur.close()
             db.commit()
             db.close()
@@ -99,15 +99,15 @@ def initialise(request):
 
         #Username, forename, surname are encrypted
         cur.execute("CREATE TABLE Students "+\
-                    "(Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") PRIMARY KEY NOT NULL,"+\
-                    "Forename VARBINARY("+str(get_AES_size(MAX_FORENAME_LENGTH))+"),"+\
-                    "Surname VARBINARY("+str(get_AES_size(MAX_SURNAME_LENGTH))+"));")
+                    "(Username VARBINARY({max_username_chars}) PRIMARY KEY NOT NULL,".format(**{"max_username_chars":get_AES_size(MAX_USERNAME_CHARS)})+\
+                    "Forename VARBINARY({max_forename_length}),".format(**{"max_forename_length":get_AES_size(MAX_FORENAME_LENGTH)})+\
+                    "Surname VARBINARY({max_surname_length}));".format(**{"max_surname_length":get_AES_size(MAX_SURNAME_LENGTH)}))
         db.commit()
 
         #Username, report are encrypted
         cur.execute("CREATE TABLE Incidents "+\
                     "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                    "Username VARBINARY("+str(get_AES_size(MAX_USERNAME_CHARS))+") NOT NULL,"+\
+                    "Username VARBINARY({max_username_chars}) NOT NULL,".format(**{"max_username_chars":get_AES_size(MAX_USERNAME_CHARS)})+\
                     "Report BLOB,"+\
                     "Date DATE,"+\
                     "FOREIGN KEY (Username) REFERENCES Students(Username));")
@@ -124,7 +124,7 @@ def initialise(request):
         db.commit()
 
         cur.execute("CREATE TABLE Accounts "+\
-                    "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") PRIMARY KEY NOT NULL,"+\
+                    "(Login VARCHAR({max_login_length}) PRIMARY KEY NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
                     "PasswordHash BINARY(32) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
@@ -138,8 +138,8 @@ def initialise(request):
 
         #try:
         cur.execute("CREATE TABLE FileKeys "+\
-                    "(Login VARCHAR("+str(MAX_LOGIN_LENGTH)+") NOT NULL,"+\
-                    "FileID VARCHAR("+str(MAX_USERNAME_CHARS)+") NOT NULL,"+\
+                    "(Login VARCHAR({max_login_length}) NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
+                    "FileID VARCHAR({max_username_chars}) NOT NULL,".format(**{"max_username_chars":MAX_USERNAME_CHARS})+\
                     "DecryptionKey BLOB NOT NULL,"+\
                     "PRIMARY KEY (Login, FileID));")
         # File will either be a student's username (for their photo) or a short reference meaning the database
@@ -158,7 +158,7 @@ def initialise(request):
     chars = string.letters + string.digits + string.punctuation
     adminpw = "".join([chars[random.randrange(0,len(chars))] for i in range(12)]) # generate a secure admin password
 
-    key = add_new_account("admin",adminpw,db)
+    key = add_new_account("admin",adminpw,0,db)
 
     #After this, we need to generate a random AES key for the database
     #The random range I have chosen generates a 256 bit key
@@ -182,7 +182,7 @@ def initialise(request):
     cur.execute("INSERT INTO FileKeys VALUES ("+\
                 "'admin',\n"+\
                 "'+database',\n"+\
-                "'"+str(s_encrypted_key)+"');")
+                "'{key}');".format(**{"key":str(s_encrypted_key)}))
     db.commit()
     cur.close()
     db.close()
@@ -200,7 +200,8 @@ def initialise(request):
         return json.dumps({"status":"BAD","error":"Failed to write config!","data":str(e)})
     return json.dumps({"status":"OK","data":{"initialised":True,"password":adminpw}})
 
-def add_new_account(username,password,db):
+def add_new_account(username,password,level,db):
+    level = int(level)
     hasher = SHA256.new()
     hasher.update(password)
     pwhash = hasher.digest() # This generates our password hash to validate the password
@@ -215,8 +216,8 @@ def add_new_account(username,password,db):
 
     #And export the private key, appending NULL to make it compatible with AES
     exported = key.exportKey()
-    while len(exported) % 16 != 0:
-        exported += "\0"
+##    while len(exported) % 16 != 0:
+##        exported += "\0"
 
     #This is then encrypted by the MySQL server using AES_ENCRYPT
     #It can then be decrypted again using AES_DECRYPT
@@ -226,11 +227,11 @@ def add_new_account(username,password,db):
 
     cur = db.cursor()
     cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
-                "('admin',\n"+\
-                "'"+s_pwhash+"',\n"+\
-                "'"+key.publickey().exportKey()+"',\n"+\
-                "AES_ENCRYPT('"+exported+"','"+sql_sanitise(aes_key)+"'),\n"+\
-                "0)")
+                "('{username}',\n".format(**{"username":username})+\
+                "'{hash}',\n".format(**{"hash":s_pwhash})+\
+                "'{public_RSA}',\n".format(**{"public_RSA":key.publickey().exportKey()})+\
+                "AES_ENCRYPT('{RSA}','{AES}'),\n".format(**{"RSA":sql_sanitise(exported),"AES":sql_sanitise(aes_key)})+\
+                "{level})".format(**{"level":level}))
     cur.close()
     db.commit()
     db.close()
@@ -265,7 +266,7 @@ def user_login(request):
     # Get the hash stored in the database and compare the hashes
     cur = db.cursor()
     # If no results are returned, the account doesn't exist
-    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '"+sql_sanitise(user)+"';") != 1:
+    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
     server_h = cur.fetchall()[0][0]
     cur.close()
@@ -322,7 +323,7 @@ def get_private_key(request):
                          passwd=sql_cfg["SQLpassword"],
                          db=sql_cfg["DATABASE_NAME"])
     cur = db.cursor()
-    if cur.execute("SELECT AES_DECRYPT(PrivateKey,'"+sql_sanitise(key)+"') FROM Accounts WHERE Login = '"+sql_sanitise(username)+"';") != 1:
+    if cur.execute("SELECT AES_DECRYPT(PrivateKey,'{AES}') FROM Accounts WHERE Login = '{username}';".format(**{"AES":sql_sanitise(key),"username":sql_sanitise(username)})) != 1:
         return (False,json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."}))
     try:
         rsa = RSA.importKey(cur.fetchall()[0][0])
@@ -368,7 +369,7 @@ def add_new_student(request):
                          passwd=sql_cfg["SQLpassword"],
                          db=sql_cfg["DATABASE_NAME"])
     cur = db.cursor()
-    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '"+sql_sanitise(user)+"';") != 1:
+    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         return json.dumps({"status":"BAD","error":"No access to file."})
     e_aes_key = cur.fetchall()[0][0]
 
@@ -398,5 +399,6 @@ def add_new_student(request):
     cur.close()
     db.close()
     return json.dumps({"status":"OK"})
+
     
 api.start()
