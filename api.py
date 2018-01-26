@@ -2,9 +2,7 @@
 
 import apiframework
 from apiframework import AuthenticationError, ConfigError
-from useful_functions import sql_sanitise, get_AES_size,\
-     add_new_account, get_private_key,\
-     get_file_key, connect_db, get_username
+from useful_functions import *
 import MySQLdb
 import os
 import json
