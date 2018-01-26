@@ -2,8 +2,15 @@
 
 import os
 
+# Error for if a config file can't be opened
+class ConfigError(Exception):
+    pass
+
 def read(config_file):
-    f = open(config_file,"r")
+    try:
+        f = open(config_file,"r")
+    except:
+        raise ConfigError
     data = f.read()
     f.close()
     lines = [line for line in data.split("\n") if "=" in line]

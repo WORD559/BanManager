@@ -8,9 +8,14 @@
 # It will be based on code from a previous project with the same goals in mind.
 
 from flask import Flask,request,Response,send_from_directory
+from configman import ConfigError
 import os
 
 app = Flask(__name__)
+
+#Dummy error for when Authentication fails
+class AuthenticationError(Exception):
+    pass
 
 class API(object):
     def __init__(self):
@@ -30,16 +35,21 @@ class API(object):
                 return Response(status=404) # 404 if function does not exist
             else:
                 try:
-                    if request.method in self.functions[f][1]:
-                        return self.functions[f][0](request) # Otherwise, return the output of the appropriate function
-                    else:
-                        return Response(status=405)
-                    # The request is passed to the function, allowing it to extract information from the HTTP request
-                except TypeError: # If the function takes no arguments
-                    if request.method in self.functions[f][1]:
-                        return self.functions[f][0]()
-                    else:
-                        return Response(status=405)
+                    try:
+                        if request.method in self.functions[f][1]:
+                            return self.functions[f][0](request) # Otherwise, return the output of the appropriate function
+                        else:
+                            return Response(status=405)
+                        # The request is passed to the function, allowing it to extract information from the HTTP request
+                    except TypeError: # If the function takes no arguments
+                        if request.method in self.functions[f][1]:
+                            return self.functions[f][0]()
+                        else:
+                            return Response(status=405)
+                except AuthenticationError:
+                    return json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."})
+                except ConfigError:
+                    return json.dumps({"status":"BAD","error":"Failed to load config."})
 
         @app.route("/favicon.ico")
         def return_favicon():
