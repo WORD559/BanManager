@@ -10,11 +10,19 @@
 from flask import Flask,request,Response,send_from_directory
 from configman import ConfigError
 import os
+import json
 
 app = Flask(__name__)
 
 #Dummy error for when Authentication fails
 class AuthenticationError(Exception):
+    pass
+
+#Dummy error for when no FileKey is available
+class FileKeyError(Exception):
+    pass
+
+class DatabaseConnectError(Exception):
     pass
 
 class API(object):
@@ -49,7 +57,12 @@ class API(object):
                 except AuthenticationError:
                     return json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."})
                 except ConfigError:
-                    return json.dumps({"status":"BAD","error":"Failed to load config."})
+                    return json.dumps({"status":"BAD","error":"Failed to load/write config."})
+                except FileKeyError:
+                    return json.dumps({"status":"BAD","error":"No access to file."})
+                except DatabaseConnectError:
+                    return json.dumps({"status":"BAD","error":"Failed to connecct to database."})
+
 
         @app.route("/favicon.ico")
         def return_favicon():
