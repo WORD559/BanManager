@@ -24,16 +24,22 @@ class API(object):
         # The start of the URL is the base route. This is defined when calling this function
         # Next is the function requested
         # Function arguments will be given in the request
-        @app.route(route+"/<f>",methods=["GET","POST"])
+        @app.route(route+"/<f>",methods=["GET","POST","PUT","DELETE"])
         def main(f):
             if not self.functions.has_key(f):
                 return Response(status=404) # 404 if function does not exist
             else:
                 try:
-                    return self.functions[f](request) # Otherwise, return the output of the appropriate function
+                    if request.method in self.functions[f][1]:
+                        return self.functions[f][0](request) # Otherwise, return the output of the appropriate function
+                    else:
+                        return Response(status=405)
                     # The request is passed to the function, allowing it to extract information from the HTTP request
                 except TypeError: # If the function takes no arguments
-                    return self.functions[f]()
+                    if request.method in self.functions[f][1]:
+                        return self.functions[f][0]()
+                    else:
+                        return Response(status=405)
 
         @app.route("/favicon.ico")
         def return_favicon():
@@ -44,11 +50,11 @@ class API(object):
                 return Response(status=404)
 
     # Function decorator for defining an API route. The route name is the f passed to the main route.
-    def route(self,name):
+    def route(self,name,methods=["GET"]):
         def decorator(function):
             def wrapper():
                 return function
-            self.functions[name] = function
+            self.functions[name] = (function,methods)
             return wrapper()
         return decorator
 
