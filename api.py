@@ -79,7 +79,7 @@ def add_new_account(username,password,level,db):
 # Requires an administrative user and password for the SQL server
 # You could use the root user, but I would recommend using a dedicated user
 # This user can be limited just to this database, which would make your server more secure
-@api.route("init")
+@api.route("init",["POST"])
 def initialise(request):
     if "SQLusers.cnf" in os.listdir("config"):
         if configman.read("config/SQLusers.cnf")["initialised"] != 0:
@@ -245,7 +245,7 @@ def initialise(request):
 # The login procedure will generate the AES key required to decrypt the user's private key
 # This will then be encrypted using the server key, and a HTTP header is sent to instruct the browser to store it in a cookie
 # Subsequent requests to the server will contain this cookie and can be decrypted, allowing the server to decrypt the private key and access the data
-@api.route("login")
+@api.route("login",["POST"])
 def user_login(request):
     try:
         sql_cfg = configman.read("config/SQLusers.cnf")
@@ -366,7 +366,7 @@ def get_file_key(user,RSA_key,File="+database"):
 
 # This function is for adding a new student to the database.
 # The student's username is required, but their forename and surname are optional
-@api.route("add_new_student")
+@api.route("add_new_student",["POST"])
 def add_new_student(request):
     try:
         sql_cfg = configman.read("config/SQLusers.cnf")
@@ -430,7 +430,7 @@ def add_new_student(request):
 # The filter could contain "user", "forename", "surname", and a boolean "like"
 # If "like" is false, the search strings must match
 # If "like" is true, records containing your search string are returned
-@api.route("student_query")
+@api.route("student_query",["GET"])
 def student_query(request):
     try:
         sql_cfg = configman.read("config/SQLusers.cnf")
@@ -439,13 +439,20 @@ def student_query(request):
     if not request.cookies.has_key("Username"):
         return json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."})
     user = str(request.cookies.get("Username"))
-    if request.form.has_key("filter"):
-        try:
-            Filter = json.loads(request.form["filter"])
-        except ValueError:
-            Filter = None
-    else:
-        Filter = None
+
+    Filter = {}
+    try:
+        if request.args.has_key("user"):
+            Filter["user"] = str(request.args["user"]).lower()
+        if request.args.has_key("forename"):
+            Filter["forename"] = str(request.args["forename"]).lower()
+        if request.args.has_key("surname"):
+            Filter["surname"] = str(request.args["surname"]).lower()
+        if request.args.has_key("like"):
+            Filter["like"] = bool(request.args["like"])
+    except:
+        return json.dumps({"status":"BAD","error":"Invalid arguments."})
+    
 
     # Get the user's private key
     key = get_private_key(request)
@@ -458,42 +465,43 @@ def student_query(request):
 
     # Generate the query based on whether there is a filter or not
     query = "SELECT AES_DECRYPT(Username,'{AES}'),AES_DECRYPT(Forename,'{AES}'),AES_DECRYPT(Surname,'{AES}') FROM Students".format(**{"AES":sql_sanitise(aes_key)})
-    if Filter:
-        where = False
-        like = False
-        if Filter.has_key("like"):
-            if Filter["like"]:
-                like = True
-        if Filter.has_key("user"):
-            if where == False:
-                query += " WHERE "
-                where = True
-            else:
-                query += " AND "
-            if like:
-                query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(str(Filter["user"])).lower(),"AES":sql_sanitise(aes_key)})
-            else:
-                query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(str(Filter["user"])).lower(),"AES":sql_sanitise(aes_key)})
-        if Filter.has_key("forename"):
-            if where == False:
-                query += " WHERE "
-                where = True
-            else:
-                query += " AND "
-            if like:
-                query += "LOWER(AES_DECRYPT(Forename,'{AES}')) LIKE '%{forename}%'".format(**{"forename":sql_sanitise(str(Filter["forename"])).lower(),"AES":sql_sanitise(aes_key)})
-            else:
-                query += "LOWER(AES_DECRYPT(Forename,'{AES}')) = '{forename}'".format(**{"forename":sql_sanitise(str(Filter["forename"])).lower(),"AES":sql_sanitise(aes_key)})
-        if Filter.has_key("surname"):
-            if where == False:
-                query += " WHERE "
-                where = True
-            else:
-                query += " AND "
-            if like:
-                query += "LOWER(AES_DECRYPT(Surname,'{AES}')) LIKE '%{surname}%'".format(**{"surname":sql_sanitise(str(Filter["surname"])).lower(),"AES":sql_sanitise(aes_key)})
-            else:
-                query += "LOWER(AES_DECRYPT(Surname,'{AES}')) = '{surname}'".format(**{"surname":sql_sanitise(str(Filter["surname"])).lower(),"AES":sql_sanitise(aes_key)})
+
+    where = False
+    like = False
+    if Filter.has_key("like"):
+        if Filter["like"]:
+            like = True
+    if Filter.has_key("user"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        if like:
+            query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
+        else:
+            query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
+    # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
+    if Filter.has_key("forename"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        if like:
+            query += "LOWER(CONVERT(AES_DECRYPT(Forename,'{AES}') USING 'utf8')) LIKE '%{forename}%'".format(**{"forename":sql_sanitise(Filter["forename"]),"AES":sql_sanitise(aes_key)})
+        else:
+            query += "LOWER(CONVERT(AES_DECRYPT(Forename,'{AES}') USING 'utf8')) = '{forename}'".format(**{"forename":sql_sanitise(Filter["forename"]),"AES":sql_sanitise(aes_key)})
+    if Filter.has_key("surname"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        if like:
+            query += "LOWER(CONVERT(AES_DECRYPT(Surname,'{AES}') USING 'utf8')) LIKE '%{surname}%'".format(**{"surname":sql_sanitise(Filter["surname"]),"AES":sql_sanitise(aes_key)})
+        else:
+            query += "LOWER(CONVERT(AES_DECRYPT(Surname,'{AES}') USING 'utf8')) = '{surname}'".format(**{"surname":sql_sanitise(Filter["surname"]),"AES":sql_sanitise(aes_key)})
 
     # Connect to the database and run the query
     db = MySQLdb.connect(host=sql_cfg["host"],
