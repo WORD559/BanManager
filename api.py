@@ -318,6 +318,7 @@ def student_query(request):
             Filter["surname"] = str(request.args["surname"]).lower()
         if request.args.has_key("like"):
             Filter["like"] = bool(request.args["like"])
+
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -429,6 +430,8 @@ def incident_query(request):
             Filter["before"] = str(request.args["before"])
         if request.args.has_key("after"):
             Filter["after"] = str(request.args["after"])
+        if request.args.has_key("id"):
+            Filter["id"] = str(request.args["id"])
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -440,7 +443,7 @@ def incident_query(request):
     aes_key = get_file_key(user,key)
 
     # Generate the query based on whether there is a filter or not
-    query = "SELECT AES_DECRYPT(Username,'{AES}'),AES_DECRYPT(Report,'{AES}'),Date FROM Incidents".format(**{"AES":sql_sanitise(aes_key)})
+    query = "SELECT IncidentID,AES_DECRYPT(Username,'{AES}'),AES_DECRYPT(Report,'{AES}'),Date FROM Incidents".format(**{"AES":sql_sanitise(aes_key)})
 
     where = False
     
@@ -466,7 +469,13 @@ def incident_query(request):
         else:
             query += " AND "
         query += "Date > '{date}'".format(**{"date":sql_sanitise(Filter["after"])})
-    
+    if Filter.has_key("id"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "IncidentID = {id}".format(**{"id":Filter["id"]})
 
     # Connect to the database and run the query
     db = connect_db()
@@ -474,7 +483,7 @@ def incident_query(request):
     cur.execute(query)
     data = list(cur.fetchall())
     for row in range(len(data)):
-        data[row] = (data[row][0],data[row][1],data[row][2].strftime("%Y-%m-%d"))
+        data[row] = (data[row][0],data[row][1],data[row][2],data[row][3].strftime("%Y-%m-%d"))
     cur.close()
     db.close()
 
