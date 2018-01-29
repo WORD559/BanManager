@@ -25,6 +25,12 @@ class FileKeyError(Exception):
 class DatabaseConnectError(Exception):
     pass
 
+class ForeignKeyError(Exception):
+    pass
+
+class RecordExistsError(Exception):
+    pass
+
 class API(object):
     def __init__(self):
         self.functions = {} # define an empty dictionary.
@@ -43,17 +49,17 @@ class API(object):
                 return Response(status=404) # 404 if function does not exist
             else:
                 try:
-                    try:
-                        if request.method in self.functions[f][1]:
-                            return self.functions[f][0](request) # Otherwise, return the output of the appropriate function
-                        else:
-                            return Response(status=405)
-                        # The request is passed to the function, allowing it to extract information from the HTTP request
-                    except TypeError: # If the function takes no arguments
-                        if request.method in self.functions[f][1]:
+                    if request.method in self.functions[f][1]:
+                        if self.functions[f][0].func_code.co_argcount == 1:
+                            return self.functions[f][0](request)
+                        elif self.functions[f][0].func_code.co_argcount == 0:
                             return self.functions[f][0]()
                         else:
                             return Response(status=405)
+                    else:
+                        return Response(status=405)
+                    # The request is passed to the function, allowing it to extract information from the HTTP request
+
                 except AuthenticationError:
                     return json.dumps({"status":"BAD","error":"Invalid authentication cookie. Please login again."})
                 except ConfigError:
@@ -62,7 +68,10 @@ class API(object):
                     return json.dumps({"status":"BAD","error":"No access to file."})
                 except DatabaseConnectError:
                     return json.dumps({"status":"BAD","error":"Failed to connecct to database."})
-
+                except RecordExistsError:
+                    return json.dumps({"status":"BAD","error":"Record already exists!"})
+                except ForeignKeyError:
+                    return json.dumps({"status":"BAD","error":"Related record does not exist."})
 
         @app.route("/favicon.ico")
         def return_favicon():

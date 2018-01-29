@@ -48,13 +48,11 @@ def add_new_account(username,password,level,db):
     #This is then encrypted by the MySQL server using AES_ENCRYPT
     #It can then be decrypted again using AES_DECRYPT
 
-    #The hash is sanitised
-    s_pwhash = sql_sanitise(pwhash)
 
     cur = db.cursor()
     cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
                 "('{username}',\n".format(**{"username":username})+\
-                "'{hash}',\n".format(**{"hash":s_pwhash})+\
+                "UNHEX('{hash}'),\n".format(**{"hash":pwhash.encode("hex")})+\
                 "'{public_RSA}',\n".format(**{"public_RSA":key.publickey().exportKey()})+\
                 "AES_ENCRYPT('{RSA}','{AES}'),\n".format(**{"RSA":sql_sanitise(exported),"AES":sql_sanitise(aes_key)})+\
                 "{level})".format(**{"level":level}))

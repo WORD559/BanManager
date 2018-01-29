@@ -1,7 +1,7 @@
 ##API for a prefect ban management system
 
 import apiframework
-from apiframework import AuthenticationError, ConfigError
+from apiframework import AuthenticationError, ConfigError, ForeignKeyError, RecordExistsError
 from useful_functions import *
 import MySQLdb
 import os
@@ -9,6 +9,7 @@ import json
 import configman
 import string
 import random
+import datetime
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
@@ -291,7 +292,7 @@ def add_new_student(request):
     try:
         cur.execute(query)
     except MySQLdb.IntegrityError:
-        return json.dumps({"status":"BAD","error":"User already exists!"})
+        raise RecordExistsError
     db.commit()
     cur.close()
     db.close()
@@ -302,7 +303,7 @@ def add_new_student(request):
 # The filter could contain "user", "forename", "surname", and a boolean "like"
 # If "like" is false, the search strings must match
 # If "like" is true, records containing your search string are returned
-@api.route("student_query",["GET"])
+@api.route("query_student",["GET"])
 def student_query(request):
     #sql_cfg = get_SQL_config()
     user = get_username(request)
@@ -372,6 +373,108 @@ def student_query(request):
     cur = db.cursor()
     cur.execute(query)
     data = cur.fetchall()
+    cur.close()
+    db.close()
+
+    return json.dumps({"status":"OK","data":data})
+
+@api.route("add_new_incident",["POST"])
+def add_new_incident(request):
+    user = get_username(request)
+    if not (request.form.has_key("user")):
+        return json.dumps({"status":"BAD","error":"Missing username."})
+    else:
+        student = sql_sanitise(str(request.form["user"].lower()))
+    if not (request.form.has_key("report")):
+        return json.dumps({"status":"BAD","error":"Missing username."})
+    else:
+        report = sql_sanitise(str(request.form["report"]))
+    if not (request.form.has_key("date")):
+        date = datetime.date.today().strftime("%Y-%m-%d")
+    else:
+        date = sql_sanitise(str(request.form["date"]))
+
+    # Get the private key
+    key = get_private_key(request)
+
+    # Get the AES key for the database
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    # Set up the query
+    query = "INSERT INTO Incidents(Username, Report, Date) VALUES "+\
+            "(AES_ENCRYPT('{username}','{AES}'),AES_ENCRYPT('{report}','{AES}'),'{date}');".format(**{"AES":aes_key,"username":student,"report":report,"date":date})
+
+    # Connect and run the query
+    db = connect_db()
+    cur = db.cursor()
+    try:
+        cur.execute(query)
+    except MySQLdb.IntegrityError:
+        raise ForeignKeyError
+    db.commit()
+    cur.close()
+    db.close()
+
+    return json.dumps({"status":"OK"})
+
+@api.route("query_incident")
+def incident_query(request):
+    user = get_username(request)
+
+    Filter = {}
+    try:
+        if request.args.has_key("user"):
+            Filter["user"] = str(request.args["user"]).lower()
+        if request.args.has_key("before"):
+            Filter["before"] = str(request.args["before"])
+        if request.args.has_key("after"):
+            Filter["after"] = str(request.args["after"])
+    except:
+        return json.dumps({"status":"BAD","error":"Invalid arguments."})
+    
+
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = get_file_key(user,key)
+
+    # Generate the query based on whether there is a filter or not
+    query = "SELECT AES_DECRYPT(Username,'{AES}'),AES_DECRYPT(Report,'{AES}'),Date FROM Incidents".format(**{"AES":sql_sanitise(aes_key)})
+
+    where = False
+    
+    if Filter.has_key("user"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
+    # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
+    if Filter.has_key("before"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "Date < '{date}'".format(**{"date":sql_sanitise(Filter["before"])})
+    if Filter.has_key("after"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "Date > '{date}'".format(**{"date":sql_sanitise(Filter["after"])})
+    
+
+    # Connect to the database and run the query
+    db = connect_db()
+    cur = db.cursor()
+    cur.execute(query)
+    data = list(cur.fetchall())
+    for row in range(len(data)):
+        data[row] = (data[row][0],data[row][1],data[row][2].strftime("%Y-%m-%d"))
     cur.close()
     db.close()
 
