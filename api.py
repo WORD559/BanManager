@@ -113,7 +113,7 @@ def initialise(request):
                     "(SanctionID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
                     "StartDate DATE,"+\
                     "EndDate DATE,"+\
-                    "Sanction TEXT,"+\
+                    "Sanction BLOB,"+\
                     "IncidentID INTEGER,"+\
                     "FOREIGN KEY (IncidentID) REFERENCES Incidents(IncidentID));")
         db.commit()
@@ -488,5 +488,48 @@ def incident_query(request):
     db.close()
 
     return json.dumps({"status":"OK","data":data})
+
+@api.route("add_new_sanction",["POST"])
+def add_new_incident(request):
+    user = get_username(request)
+    if not (request.form.has_key("id")):
+        return json.dumps({"status":"BAD","error":"Missing incident ID."})
+    else:
+        incident = int(request.form["id"])
+    if not (request.form.has_key("sanction")):
+        return json.dumps({"status":"BAD","error":"Missing sanction."})
+    else:
+        sanction = sql_sanitise(str(request.form["sanction"]))
+    if not (request.form.has_key("start_date")):
+        start_date = datetime.date.today().strftime("%Y-%m-%d")
+    else:
+        start_date = sql_sanitise(str(request.form["start_date"]))
+    if not (request.form.has_key("end_date")):
+        return json.dumps({"status":"BAD","error":"Missing end date."})
+    else:
+        end_date = sql_sanitise(str(request.form["end_date"]))
+
+    # Get the private key
+    key = get_private_key(request)
+
+    # Get the AES key for the database
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    # Set up the query
+    query = "INSERT INTO Sanctions(IncidentID, StartDate, EndDate, Sanction) VALUES "+\
+            "({id},'{start_date}','{end_date}',AES_ENCRYPT('{sanction}','{AES}'));".format(**{"AES":aes_key,"id":incident,"sanction":sanction,"start_date":start_date,"end_date":end_date})
+    
+    # Connect and run the query
+    db = connect_db()
+    cur = db.cursor()
+    try:
+        cur.execute(query)
+    except MySQLdb.IntegrityError:
+        raise ForeignKeyError
+    db.commit()
+    cur.close()
+    db.close()
+
+    return json.dumps({"status":"OK"})
     
 api.start()
