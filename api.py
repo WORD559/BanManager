@@ -492,7 +492,7 @@ def incident_query(request):
     return json.dumps({"status":"OK","data":data})
 
 @api.route("add_new_sanction",["POST"])
-def add_new_incident(request):
+def add_new_sanction(request):
     user = get_username(request)
     if not (request.form.has_key("id")):
         return json.dumps({"status":"BAD","error":"Missing incident ID."})
