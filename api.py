@@ -124,7 +124,7 @@ def initialise(request):
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
                     "AccountType INTEGER NOT NULL,"+\
-                    "Email VARCHAR(254));")
+                    "Email VARBINARY(256));")
         #TEXT is used as these fields exceed 255 chars
         #The hash can be stored efficiently in a BINARY field
         #The private key is best stored in a BLOB. This allows the AES-enrypted private key to be stored as a binary object so as to be space-efficient. Also very compatible with the AES_ENCRYPT function of MySQL
@@ -373,8 +373,10 @@ def student_query(request):
     db = connect_db()
     cur = db.cursor()
     cur.execute(query)
-    data = cur.fetchall()
+    data = list(cur.fetchall())
     cur.close()
+    for row in range(len(data)):
+        data[row] = {"Username":data[row][0],"Forename":data[row][1],"Surname":data[row][2]}
     db.close()
 
     return json.dumps({"status":"OK","data":data})
@@ -483,7 +485,7 @@ def incident_query(request):
     cur.execute(query)
     data = list(cur.fetchall())
     for row in range(len(data)):
-        data[row] = (data[row][0],data[row][1],data[row][2],data[row][3].strftime("%Y-%m-%d"))
+        data[row] = {"ID":data[row][0],"Username":data[row][1],"Report":data[row][2],"Date":data[row][3].strftime("%Y-%m-%d")}
     cur.close()
     db.close()
 
@@ -531,5 +533,97 @@ def add_new_incident(request):
     db.close()
 
     return json.dumps({"status":"OK"})
+
+@api.route("query_sanction")
+def sanction_query(request):
+    user = get_username(request)
+
+    Filter = {}
+    try:
+        if request.args.has_key("incident"):
+            Filter["incident"] = int(request.args["incident"])
+        if request.args.has_key("starts_before"):
+            Filter["starts_before"] = str(request.args["starts_before"])
+        if request.args.has_key("starts_after"):
+            Filter["starts_after"] = str(request.args["starts_after"])
+        if request.args.has_key("ends_before"):
+            Filter["ends_before"] = str(request.args["ends_before"])
+        if request.args.has_key("ends_after"):
+            Filter["ends_after"] = str(request.args["ends_after"])
+        if request.args.has_key("id"):
+            Filter["id"] = str(request.args["id"])
+    except:
+        return json.dumps({"status":"BAD","error":"Invalid arguments."})
+    
+
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = get_file_key(user,key)
+
+    # Generate the query based on whether there is a filter or not
+    query = "SELECT SanctionID,StartDate,EndDate,AES_DECRYPT(Sanction,'{AES}'),IncidentID FROM Sanctions".format(**{"AES":sql_sanitise(aes_key)})
+
+    where = False
+    
+    if Filter.has_key("incident"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "IncidentID = {incident}".format(**{"incident":Filter["incident"]})
+    # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
+    if Filter.has_key("starts_before"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "StartDate < '{date}'".format(**{"date":sql_sanitise(Filter["starts_before"])})
+    if Filter.has_key("starts_after"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "StartDate > '{date}'".format(**{"date":sql_sanitise(Filter["starts_after"])})
+    if Filter.has_key("ends_before"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "EndDate < '{date}'".format(**{"date":sql_sanitise(Filter["ends_before"])})
+    if Filter.has_key("ends_after"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "EndDate > '{date}'".format(**{"date":sql_sanitise(Filter["ends_after"])})
+    
+    if Filter.has_key("id"):
+        if where == False:
+            query += " WHERE "
+            where = True
+        else:
+            query += " AND "
+        query += "SanctionID = {id}".format(**{"id":Filter["id"]})
+
+    # Connect to the database and run the query
+    db = connect_db()
+    cur = db.cursor()
+    cur.execute(query)
+    data = list(cur.fetchall())
+    for row in range(len(data)):
+        data[row] = {"ID":data[row][0],"StartDate":data[row][1].strftime("%Y-%m-%d"),"EndDate":data[row][2].strftime("%Y-%m-%d"),"Sanction":data[row][3],"IncidentID":data[row][4]}
+    cur.close()
+    db.close()
+
+    return json.dumps({"status":"OK","data":data})
+
+
     
 api.start()
