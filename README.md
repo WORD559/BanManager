@@ -96,4 +96,14 @@ Adds a new incident that pertains to a particular student. The username must hav
 
 * `user`: Username of the student who the incident pertains to.
 * `report`: The report of the incident. This should detail what happened.
-* `date` (optional): The date of the incident.
+* `date` (optional): The date of the incident, in YYYY-MM-DD format.
+
+## /add_new_sanction
+Adds a new sanction in response to a particular incident. This requires a start and end date for the sanction (an "indefinite" sanction should just be a very far end date, for example 100 years). 
+
+*Arguments:*
+
+* `id`: ID of the incident.
+* `sanction`: The sanction to be imposed.
+* `start_date`: The start date of the sanction, in YYYY-MM-DD format.
+* `end_date`: The end date of the sanction, in YYYY-MM-DD format.
