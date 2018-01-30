@@ -88,3 +88,12 @@ These fields are encrypted with a 256-bit AES key in order to conform with the D
 * `user`: Username of the student.
 * `forename` (optional): Student's forename.
 * `surname` (optional): Student's surname.
+
+## /add_new_incident
+Adds a new incident that pertains to a particular student. The username must have already been added with `/add_new_student`. If the date is not specified, it defaults to the current date.
+
+*Arguments:*
+
+* `user`: Username of the student who the incident pertains to.
+* `report`: The report of the incident. This should detail what happened.
+* `date` (optional): The date of the incident.
