@@ -624,6 +624,65 @@ def sanction_query(request):
 
     return json.dumps({"status":"OK","data":data})
 
+@api.route("modify_student",["POST"])
+def modify_user(request):
+    user = get_username(request)
 
+    if not (request.form.has_key("user")):
+        return json.dumps({"status":"BAD","error":"Missing username."})
+    else:
+        student = sql_sanitise(str(request.form["user"])).lower()
+    if not (request.form.has_key("delete")):
+        delete = False
+    else:
+        delete = bool(request.form["delete"])
+    if not (request.form.has_key("new_user")):
+        new = None
+    else:
+        new = sql_sanitise(str(request.form["new_user"])).lower()
+    if not (request.form.has_key("forename")):
+        forename = None
+    else:
+        forename = sql_sanitise(str(request.form["forename"]))
+    if not (request.form.has_key("surname")):
+        surname = None
+    else:
+        surname = sql_sanitise(str(request.form["surname"]))
+
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    # Handle a request to delete by deleting the selected user
+    # I would have used HTTP DELETE requests for this, however the user to delete is specified in form data, which is not supposed to be used with DELETE.
+    # DELETE is more designed for proper URLs, anyway.
+    # I could get around this by doing something such as /delete_student/<username> but this would be fairly inconsistent with the way the API has been designed in the first place.
+    # Besides, DELETE is supported in *HTTP* but not very well supported in HTML.
+    if delete:
+        # First we need to get any incidents that are connected to them.
+        db = connect_db()
+        cur = db.cursor()
+        cur.execute("SELECT IncidentID FROM Incidents WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"AES":aes_key,"user":student}))
+        incidents = [str(i[0]) for i in cur.fetchall()]
+        if len(incidents) > 0:
+            # Now we delete any connected sanctions
+            condition = "' OR IncidentID = '".join(incidents)
+            query = "DELETE FROM Sanctions WHERE IncidentID = '"+condition+"';"
+            cur.execute(query)
+            
+            # And then the incidents themselves
+            query = "DELETE FROM Incidents WHERE IncidentID = '"+condition+"';"
+            if not cur.execute(query) == len(incidents):
+                return json.dumps({"status":"BAD","error":"Internal error: number of incidents deleted different from number found. Changes have not been committed."})
+
+        # Now we can delete the user data
+        cur.execute("DELETE FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"AES":aes_key,"user":student}))
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK","data":"User '{user}' deleted.".format(**{"user":student})})
+    
     
 api.start()
