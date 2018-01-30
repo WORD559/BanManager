@@ -5,6 +5,53 @@ This software is being developed for the purpose of my NEA for my Computer Scien
 
 It is currently incomplete, and much of this README is expected to change. For example, I intend to write a client that will take advantage of the server. 
 
+# Database Setup
+Below I have written the structure of the database used. Bold fields are primary keys, emphasised fields are foreign keys.
+
+## Students
+|Field        |Datatype |Encrypted?|
+|:-----------:|:-------:|:--------:|
+|**Username** |VARBINARY|Yes       |
+|Forename     |VARBINARY|Yes       |
+|Surname      |VARBINARY|Yes       |
+
+## Incidents
+|Field         |Datatype |Encrypted?|
+|:------------:|:-------:|:--------:|
+|**IncidentID**|INTEGER  |No        |
+|*Username*    |VARBINARY|Yes       |
+|Report        |BLOB     |Yes       |
+|Date          |DATE     |No        |
+
+## Sanctions
+|Field         |Datatype |Encrypted?|
+|:------------:|:-------:|:--------:|
+|**SanctionID**|INTEGER  |No        |
+|StartDate     |DATE     |No        |
+|EndDate       |DATE     |No        |
+|Sanction      |BLOB     |Yes       |
+|*IncidentID*  |INTEGER  |No        |
+
+## Accounts
+|Field         |Datatype      |Encrypted?|
+|:------------:|:------------:|:--------:|
+|**Login**     |VARCHAR       |No        |
+|PasswordHash  |BINARY(32)    |No        |
+|PublicKey     |TEXT          |No        |
+|PrivateKey    |BLOB          |Yes       |
+|AccountType   |INTEGER       |No        |
+|Email         |VARBINARY(256)|Yes       |
+
+## FileKeys
+|Field         |Datatype |Encrypted?|
+|:------------:|:-------:|:--------:|
+|**_Login_**   |VARCHAR  |No        |
+|**FileID**    |VARCHAR  |No        |
+|DecryptionKey |BLOB     |Yes       |
+
+
+Most fields are encrypted using the database key. However, Accounts.PrivateKey is encrypted using a key unique to that username and password combination, and FileKeys.DecryptionKey is encrypted with the user's RSA public key.
+
 # API Reference
 
 ## /init
