@@ -683,6 +683,26 @@ def modify_user(request):
         cur.close()
         db.close()
         return json.dumps({"status":"OK","data":"User '{user}' deleted.".format(**{"user":student})})
-    
+    # Otherwise, this is a modify request, so use UPDATE
+    else:
+        columns = []
+        if new:
+            columns.append("Username = AES_ENCRYPT('{new}','{AES}')".format(**{"new":new,"AES":aes_key}))
+        if forename:
+            columns.append("Forename = AES_ENCRYPT('{forename}','{AES}')".format(**{"forename":forename,"AES":aes_key}))
+        if surname:
+            columns.append("Surname = AES_ENCRYPT('{surname}','{AES}')".format(**{"surname":surname,"AES":aes_key}))
+        if len(columns) > 0:
+            query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":student,"AES":aes_key})
+        else:
+            return json.dumps({"status":"OK"})
+        db = connect_db()
+        cur = db.cursor()
+        cur.execute(query)
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK"})
+
     
 api.start()

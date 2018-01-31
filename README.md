@@ -107,3 +107,16 @@ Adds a new sanction in response to a particular incident. This requires a start 
 * `sanction`: The sanction to be imposed.
 * `start_date`: The start date of the sanction, in YYYY-MM-DD format.
 * `end_date`: The end date of the sanction, in YYYY-MM-DD format.
+
+## /query_student
+Queries the database for student records. This either returns **all** student stored in the database, or can be filtered based on the optional arguments supplied in the GET parameters.
+
+*Arguments:*
+
+* `user` (optional): Filter based on username
+* `forename` (optional): Filter based on forename
+* `surname` (optional): Filter based on surname
+* `like` (optional): Boolean field. If True, an SQL "LIKE" query is performed. This returns any records that contain the search strings.
+
+*Returns:*
+
