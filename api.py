@@ -835,5 +835,65 @@ def modify_sanction(request):
         cur.close()
         db.close()
         return json.dumps({"status":"OK"})
+
+# Now we need a password change routine.
+# This can be done by:
+# 1) loading the user's private key
+# 2) changing the password hash
+# 3) generating the new AES key and re-encrypting the private key
+# The user must be logged in already, but they must also provide their current password
+@api.route("change_password",["POST"])
+def change_password(request):
+    user = get_username(request)
+
+    if not (request.form.has_key("pass")):
+        return json.dumps({"status":"BAD","error":"Missing current password."})
+    else:
+        passwd = str(request.form["pass"])
+    if not (request.form.has_key("new")):
+        return json.dumps({"status":"BAD","error":"Missing new password."})
+    else:
+        new = str(request.form["new"])
+
+    # Validate that the old password is correct.
+    db = connect_db()
+    cur = db.cursor()
+    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
+        return json.dumps({"status":"BAD","error":"Incorrect username/password."})
+    pwhash = cur.fetchall()[0][0]
+    hasher = SHA256.new()
+    hasher.update(passwd)
+    if pwhash != hasher.digest():
+        return json.dumps({"status":"BAD","error":"Incorrect username/password."})
+
+    # Old password is correct, generate the new password hash
+    hasher = SHA256.new()
+    hasher.update(new)
+    pwhash = hasher.digest()
+
+    # Make the AES key
+    hasher = SHA256.new()
+    hasher.update(user+new+pwhash)
+    aes_key = hasher.digest()
+
+    # Load and export the private key
+    key = get_private_key(request)
+    exported = key.exportKey()
+
+    # Connect to the database, add the new hash, and re-encrypt the private key
+    db = connect_db()
+    cur = db.cursor()
+    cur.execute("UPDATE Accounts SET PasswordHash = UNHEX('{hash}'), PrivateKey = AES_ENCRYPT('{RSA}','{AES}') WHERE Login = '{user}';".format(**{"AES":sql_sanitise(aes_key),"hash":pwhash.encode("hex"),"RSA":sql_sanitise(exported),"user":user}))
+    db.commit()
+    cur.close()
+    db.close()
+
+    # Now we need to delete the API key and make the user log in again
+    # We do this by blanking the cookies and setting them to expire immediately
+    r = app.make_response(json.dumps({"status":"OK","data":"Logged out!"}))
+    r.set_cookie("API_SESSION",value="",expires=0)
+    r.set_cookie("Username",value="",expires=0)
+    return r
+    
     
 api.start()
