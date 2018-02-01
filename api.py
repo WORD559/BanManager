@@ -704,5 +704,136 @@ def modify_user(request):
         db.close()
         return json.dumps({"status":"OK"})
 
+@api.route("modify_incident",["POST"])
+def modify_incident(request):
+    user = get_username(request)
+
+    if not (request.form.has_key("id")):
+        return json.dumps({"status":"BAD","error":"Missing ID."})
+    else:
+        incident = int(request.form["id"])
+    if not (request.form.has_key("delete")):
+        delete = False
+    else:
+        delete = bool(request.form["delete"])
+    if not (request.form.has_key("new_user")):
+        new = None
+    else:
+        new = sql_sanitise(str(request.form["new_user"])).lower()
+    if not (request.form.has_key("report")):
+        report = None
+    else:
+        report = sql_sanitise(str(request.form["report"]))
+    if not (request.form.has_key("date")):
+        date = None
+    else:
+        date = sql_sanitise(str(request.form["date"]))
+
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    if delete:
+        # First we need to delete any sanctions.
+        db = connect_db()
+        cur = db.cursor()
+        query = "DELETE FROM Sanctions WHERE IncidentID = {id};".format(**{"id":incident})
+        cur.execute(query)
+        # Now we can delete the incident.
+        cur.execute("DELETE FROM Incidents WHERE IncidentID = {id};".format(**{"id":incident}))
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK","data":"Incident {id} deleted.".format(**{"id":incident})})
+    # Otherwise, this is a modify request, so use UPDATE
+    else:
+        columns = []
+        if new:
+            columns.append("Username = AES_ENCRYPT('{new}','{AES}')".format(**{"new":new,"AES":aes_key}))
+        if report:
+            columns.append("Report = AES_ENCRYPT('{report}','{AES}')".format(**{"report":report,"AES":aes_key}))
+        if date:
+            columns.append("Date = '{date}'".format(**{"date":date}))
+        if len(columns) > 0:
+            query = "UPDATE Incidents SET "+", ".join(columns)+" WHERE IncidentID = {id}".format(**{"id":incident})
+        else:
+            return json.dumps({"status":"OK"})
+        db = connect_db()
+        cur = db.cursor()
+        cur.execute(query)
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK"})
+
+@api.route("modify_sanction",["POST"])
+def modify_sanction(request):
+    user = get_username(request)
+
+    if not (request.form.has_key("id")):
+        return json.dumps({"status":"BAD","error":"Missing ID."})
+    else:
+        ID = int(request.form["id"])
+    if not (request.form.has_key("delete")):
+        delete = False
+    else:
+        delete = bool(request.form["delete"])
+    if not (request.form.has_key("new_incident")):
+        new = None
+    else:
+        new = int(request.form["new_incident"])
+    if not (request.form.has_key("sanction")):
+        sanction = None
+    else:
+        sanction = sql_sanitise(str(request.form["sanction"]))
+    if not (request.form.has_key("start_date")):
+        start_date = None
+    else:
+        start_date = sql_sanitise(str(request.form["start_date"]))
+    if not (request.form.has_key("end_date")):
+        end_date = None
+    else:
+        end_date = sql_sanitise(str(request.form["end_date"]))
+
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    if delete:
+        # First we need to delete any sanctions.
+        db = connect_db()
+        cur = db.cursor()
+        query = "DELETE FROM Sanctions WHERE SanctionID = {id};".format(**{"id":ID})
+        cur.execute(query)
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK","data":"Sanction {id} deleted.".format(**{"id":ID})})
+    # Otherwise, this is a modify request, so use UPDATE
+    else:
+        columns = []
+        if new:
+            columns.append("IncidentID = {new}".format(**{"new":new}))
+        if sanction:
+            columns.append("Sanction = AES_ENCRYPT('{sanction}','{AES}')".format(**{"sanction":sanction,"AES":aes_key}))
+        if start_date:
+            columns.append("StartDate = '{start_date}'".format(**{"start_date":start_date}))
+        if end_date:
+            columns.append("EndDate = '{end_date}'".format(**{"end_date":end_date}))
+        if len(columns) > 0:
+            query = "UPDATE Sanctions SET "+", ".join(columns)+" WHERE SanctionID = {id}".format(**{"id":ID})
+        else:
+            return json.dumps({"status":"OK"})
+        db = connect_db()
+        cur = db.cursor()
+        cur.execute(query)
+        db.commit()
+        cur.close()
+        db.close()
+        return json.dumps({"status":"OK"})
     
 api.start()
