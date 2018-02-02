@@ -122,7 +122,7 @@ def initialise(request):
                     "(Login VARCHAR({max_login_length}) PRIMARY KEY NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
                     "PasswordHash BINARY(32) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
-                    "PrivateKey TEXT NOT NULL,"+\
+                    "PrivateKey BLOB NOT NULL,"+\
                     "AccountType INTEGER NOT NULL,"+\
                     "Email VARBINARY(256));")
         #TEXT is used as these fields exceed 255 chars
@@ -163,7 +163,7 @@ def initialise(request):
                                     115792089237316195423570985008687907853269984665640564039457584007913129639936)
 ##    print "RAW:",database_key
     #This key is converted to hexadecimal, then encrypted with the administrator's key
-    #The encrypted key is stored in hex too
+    #The encrypted key is put in hex, and then entered using MySQL's UNHEX
     #This is to overcome an odd problem I was having where the encrypted string stored in the database was wrong
     hex_key = hex(database_key)[2:].replace("L","")
 ##    print "HEX:",hex_key
@@ -183,7 +183,7 @@ def initialise(request):
     cur.execute("INSERT INTO FileKeys VALUES ("+\
                 "'admin',\n"+\
                 "'+database',\n"+\
-                "'{key}');".format(**{"key":str(s_encrypted_key)}))
+                "UNHEX('{key}'));".format(**{"key":str(s_encrypted_key)}))
     db.commit()
     cur.close()
     db.close()
@@ -971,7 +971,7 @@ def create_account(request):
     db = connect_db()
     cur = db.cursor()
     for k in range(len(keys)):
-        query = "INSERT INTO FileKeys VALUES ('{username}','{file_id}','{key}');".format(**{"username":sql_sanitise(username),"file_id":sql_sanitise(keys[k]["id"]),"key":sql_sanitise(keys[k]["new_key"])})
+        query = "INSERT INTO FileKeys VALUES ('{username}','{file_id}',UNHEX('{key}'));".format(**{"username":sql_sanitise(username),"file_id":sql_sanitise(keys[k]["id"]),"key":sql_sanitise(keys[k]["new_key"])})
         cur.execute(query)
     db.commit()
     cur.close()

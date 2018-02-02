@@ -109,7 +109,7 @@ def get_file_key(user,RSA_key,File="+database"):
     cur = db.cursor()
     if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         raise FileKeyError
-    e_aes_key = cur.fetchall()[0][0].decode("hex")
+    e_aes_key = cur.fetchall()[0][0]
 ##    print "ENC2:",e_aes_key.encode("hex")
     cur.close()
     db.close()
