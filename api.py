@@ -894,6 +894,69 @@ def change_password(request):
     r.set_cookie("API_SESSION",value="",expires=0)
     r.set_cookie("Username",value="",expires=0)
     return r
+
+# Now we need to be able to create new users
+# New users need a Login name and password (which will create their encryption key)
+# They will also need an RSA key generated for them
+# Thankfully, we have a function in place already for creating a new user
+# However, after we add a new user, we will have to give them access to the database
+# This means that the admin will have to decrypt all of their own keys and give them to the new user
+# With this, we will begin to add features of account ranks, as only admins should be able to create new users
+# 0 = admin
+# 1 = teacher
+# 2 = student
+# Admins can access all functions
+# Teachers can access all except managing other user accounts
+# Students can only submit incidents and make queries
+
+@api.route("add_new_account",["POST"])
+def create_account(request):
+    if not (request.form.has_key("user")):
+        return json.dumps({"status":"BAD","error":"Missing username."})
+    else:
+        username = str(request.form["user"])
+    if not (request.form.has_key("pass")):
+        return json.dumps({"status":"BAD","error":"Missing password."})
+    else:
+        passwd = str(request.form["pass"])
+    if not (request.form.has_key("rank")):
+        return json.dumps({"status":"BAD","error":"Missing rank."})
+    else:
+        rank = int(request.form["rank"])
+        
+    user = get_username(request)
+    # If we can get the admin's private key, they are logged in
+    # Besides this, we will need the key later
+    key = get_private_key(request)
+
+    # Use the add_new_account function to insert a new account into the database
+    db = connect_db()
+    new_key = add_new_account(username,passwd,rank,db)
+
+    # Now we need to get the FileKeys for the current user
+    db = connect_db()
+    cur = db.cursor()
+    cur.execute("SELECT FileID,DecryptionKey FROM FileKeys WHERE Login = '{user}';".format(**{"user":user}))
+    keys = [{"id":k[0],"original_key":k[1]} for k in cur.fetchall()]
+    cur.close()
+    db.close()
+
+    # And re-encrypt all of the keys
+    for k in range(len(keys)):
+        keys[k]["new_key"] = new_key.encrypt(key.decrypt(keys[k]["original_key"]),0)[0]
+
+    # Now we insert all the new keys into the database
+    db = connect_db()
+    cur = db.cursor()
+    for k in range(len(keys)):
+        query = "INSERT INTO FileKeys VALUES ('{username}','{file_id}','{key}');".format(**{"username":sql_sanitise(username),"file_id":sql_sanitise(keys[k]["id"]),"key":sql_sanitise(keys[k]["new_key"])})
+        cur.execute(query)
+    db.commit()
+    cur.close()
+    db.close()
+    return json.dumps({"status":"OK"})
+    
+
     
     
 api.start()

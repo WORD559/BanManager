@@ -51,9 +51,9 @@ def add_new_account(username,password,level,db):
 
     cur = db.cursor()
     cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
-                "('{username}',\n".format(**{"username":username})+\
+                "('{username}',\n".format(**{"username":sql_sanitise(username)})+\
                 "UNHEX('{hash}'),\n".format(**{"hash":pwhash.encode("hex")})+\
-                "'{public_RSA}',\n".format(**{"public_RSA":key.publickey().exportKey()})+\
+                "'{public_RSA}',\n".format(**{"public_RSA":sql_sanitise(key.publickey().exportKey())})+\
                 "AES_ENCRYPT('{RSA}','{AES}'),\n".format(**{"RSA":sql_sanitise(exported),"AES":sql_sanitise(aes_key)})+\
                 "{level})".format(**{"level":level}))
     cur.close()
