@@ -1,7 +1,7 @@
 ##API for a prefect ban management system
 
 import apiframework
-from apiframework import AuthenticationError, ConfigError, ForeignKeyError, RecordExistsError
+from specialexceptions import *
 from useful_functions import *
 import MySQLdb
 import os
@@ -254,6 +254,8 @@ def user_login(request):
 def add_new_student(request):
     #sql_cfg = get_SQL_config()
     user = get_username(request)
+    if get_rank(user) > 2: # If not a prefect
+        raise RankError
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
@@ -384,6 +386,8 @@ def student_query(request):
 @api.route("add_new_incident",["POST"])
 def add_new_incident(request):
     user = get_username(request)
+    if get_rank(user) > 2: # If not a prefect
+        raise RankError
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
@@ -494,6 +498,8 @@ def incident_query(request):
 @api.route("add_new_sanction",["POST"])
 def add_new_sanction(request):
     user = get_username(request)
+    if get_rank(user) > 1: # If not a teacher
+        raise RankError
     if not (request.form.has_key("id")):
         return json.dumps({"status":"BAD","error":"Missing incident ID."})
     else:
@@ -627,6 +633,8 @@ def sanction_query(request):
 @api.route("modify_student",["POST"])
 def modify_user(request):
     user = get_username(request)
+    if get_rank(user) > 2: # If not a prefect
+        raise RankError
 
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
@@ -707,6 +715,8 @@ def modify_user(request):
 @api.route("modify_incident",["POST"])
 def modify_incident(request):
     user = get_username(request)
+    if get_rank(user) > 2: # If not a prefect
+        raise RankError
 
     if not (request.form.has_key("id")):
         return json.dumps({"status":"BAD","error":"Missing ID."})
@@ -771,6 +781,8 @@ def modify_incident(request):
 @api.route("modify_sanction",["POST"])
 def modify_sanction(request):
     user = get_username(request)
+    if get_rank(user) > 1: # If not a teacher
+        raise RankError
 
     if not (request.form.has_key("id")):
         return json.dumps({"status":"BAD","error":"Missing ID."})
@@ -925,6 +937,8 @@ def create_account(request):
         rank = int(request.form["rank"])
         
     user = get_username(request)
+    if get_rank(user) > 0: # If not an admin
+        raise RankError
     # If we can get the admin's private key, they are logged in
     # Besides this, we will need the key later
     key = get_private_key(request)
@@ -955,8 +969,6 @@ def create_account(request):
     cur.close()
     db.close()
     return json.dumps({"status":"OK"})
-    
 
-    
     
 api.start()

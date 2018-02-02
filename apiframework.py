@@ -9,27 +9,11 @@
 
 from flask import Flask,request,Response,send_from_directory
 from configman import ConfigError
+from specialexceptions import *
 import os
 import json
 
 app = Flask(__name__)
-
-#Dummy error for when Authentication fails
-class AuthenticationError(Exception):
-    pass
-
-#Dummy error for when no FileKey is available
-class FileKeyError(Exception):
-    pass
-
-class DatabaseConnectError(Exception):
-    pass
-
-class ForeignKeyError(Exception):
-    pass
-
-class RecordExistsError(Exception):
-    pass
 
 class API(object):
     def __init__(self):
@@ -72,6 +56,8 @@ class API(object):
                     return json.dumps({"status":"BAD","error":"Record already exists!"})
                 except ForeignKeyError:
                     return json.dumps({"status":"BAD","error":"Related record does not exist."})
+                except RankError:
+                    return json.dumps({"status":"BAD","error":"User not a high enough rank to perform that operation."})
 
         @app.route("/favicon.ico")
         def return_favicon():

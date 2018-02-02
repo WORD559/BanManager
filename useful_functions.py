@@ -1,7 +1,6 @@
 ##Useful functions
 
-from apiframework import ConfigError, AuthenticationError, FileKeyError,\
-     DatabaseConnectError
+from specialexceptions import *
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 import json
@@ -132,3 +131,11 @@ def get_username(request):
         raise AuthenticationError
     user = str(request.cookies.get("Username"))
     return user
+
+def get_rank(user):
+    db = connect_db()
+    cur = db.cursor()
+    query = "SELECT AccountType FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})
+    if cur.execute(query) != 1:
+        raise AuthenticationError
+    return cur.fetchall()[0][0]
