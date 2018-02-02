@@ -5,6 +5,14 @@ This software is being developed for the purpose of my NEA for my Computer Scien
 
 It is currently incomplete, and much of this README is expected to change. For example, I intend to write a client that will take advantage of the server. 
 
+# Contents
+* [Database Setup](#database-setup)
+    * [Students](#students)
+    * [Incidents](#incidents)
+    * [Sanctions](#sanctions)
+    * [Accounts](#accounts)
+    * [FileKeys](#filekeys)
+
 # Database Setup
 Below I have written the structure of the database used. Bold fields are primary keys, emphasised fields are foreign keys.
 
