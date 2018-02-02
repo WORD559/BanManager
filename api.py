@@ -122,7 +122,7 @@ def initialise(request):
                     "(Login VARCHAR({max_login_length}) PRIMARY KEY NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
                     "PasswordHash BINARY(32) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
-                    "PrivateKey BLOB NOT NULL,"+\
+                    "PrivateKey TEXT NOT NULL,"+\
                     "AccountType INTEGER NOT NULL,"+\
                     "Email VARBINARY(256));")
         #TEXT is used as these fields exceed 255 chars
@@ -154,15 +154,21 @@ def initialise(request):
     adminpw = "".join([chars[random.randrange(0,len(chars))] for i in range(12)]) # generate a secure admin password
 
     key = add_new_account("admin",adminpw,0,db)
+##    print key.exportKey()
 
     #After this, we need to generate a random AES key for the database
     #The random range I have chosen generates a 256 bit key
 
     database_key = random.randrange(57896044618658097711785492504343953926634992332820282019728792003956564819968,
                                     115792089237316195423570985008687907853269984665640564039457584007913129639936)
-    
+##    print "RAW:",database_key
     #This key is converted to hexadecimal, then encrypted with the administrator's key
-    encrypted_key = key.encrypt(hex(database_key)[2:].replace("L",""),0)[0]
+    #The encrypted key is stored in hex too
+    #This is to overcome an odd problem I was having where the encrypted string stored in the database was wrong
+    hex_key = hex(database_key)[2:].replace("L","")
+##    print "HEX:",hex_key
+    encrypted_key = key.encrypt(hex_key,0)[0].encode("hex")
+##    print "ENC:",encrypted_key
 
     #Make sure to sanitise
     s_encrypted_key = sql_sanitise(encrypted_key)
@@ -950,14 +956,16 @@ def create_account(request):
     # Now we need to get the FileKeys for the current user
     db = connect_db()
     cur = db.cursor()
-    cur.execute("SELECT FileID,DecryptionKey FROM FileKeys WHERE Login = '{user}';".format(**{"user":user}))
-    keys = [{"id":k[0],"original_key":k[1]} for k in cur.fetchall()]
+    cur.execute("SELECT FileID FROM FileKeys WHERE Login = '{user}';".format(**{"user":user}))
+    keys = [{"id":k[0]} for k in cur.fetchall()]
     cur.close()
     db.close()
 
     # And re-encrypt all of the keys
     for k in range(len(keys)):
-        keys[k]["new_key"] = new_key.encrypt(key.decrypt(keys[k]["original_key"]),0)[0]
+        aes_key = get_file_key(user,key,keys[k]["id"]).encode("hex")
+        e_aes_key = new_key.encrypt(aes_key,0)[0]
+        keys[k]["new_key"] = e_aes_key.encode("hex")
 
     # Now we insert all the new keys into the database
     db = connect_db()

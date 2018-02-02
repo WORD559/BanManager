@@ -85,13 +85,16 @@ def get_private_key(request):
     if cur.execute("SELECT AES_DECRYPT(PrivateKey,'{AES}') FROM Accounts WHERE Login = '{username}';".format(**{"AES":sql_sanitise(key),"username":sql_sanitise(username)})) != 1:
         raise AuthenticationError
     try:
-        rsa = RSA.importKey(cur.fetchall()[0][0])
+        data = cur.fetchall()[0][0]
+##        print data
+        rsa = RSA.importKey(data)
         cur.close()
         db.close()
     except ValueError:
         cur.close()
         db.close()
         raise AuthenticationError
+    #print rsa.exportKey()
     return rsa
 
 # We can also construct a function for getting the AES key of a file
@@ -106,13 +109,17 @@ def get_file_key(user,RSA_key,File="+database"):
     cur = db.cursor()
     if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         raise FileKeyError
-    e_aes_key = cur.fetchall()[0][0]
+    e_aes_key = cur.fetchall()[0][0].decode("hex")
+##    print "ENC2:",e_aes_key.encode("hex")
     cur.close()
     db.close()
 
     # Decrypt the key
     aes_key = RSA_key.decrypt(e_aes_key)
-    return aes_key
+##    print "HEX2:",aes_key
+##    print aes_key.encode("hex")
+##    print len(aes_key)
+    return aes_key.decode("hex")
 # The two functions above are incredibly useful, and will be used in most subsequent functions
 
 def connect_db():
