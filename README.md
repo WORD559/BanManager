@@ -120,3 +120,49 @@ Queries the database for student records. This either returns **all** student st
 
 *Returns:*
 
+This will return a list of dictionaries with the following structure.
+
+* `Username`: Student's username.
+* `Forename`: Student's forename.
+* `Surname`: Student's surname.
+
+## /query_incident
+Queries the database for incidents that have been reported. Like [/query_student](#query_student), this returns all the incident, or can be filtered with the optional arguments.
+
+*Arguments:*
+
+* `user` (optional): Username of the student associated with the incident.
+* `before` (optional): Get incidents from before this date, with the date in YYYY-MM-DD format.
+* `after` (optional): Get incidents from after this date, with the date in YYYY-MM-DD format.
+* `id` (optional): Get the incident with this IncidentID.
+
+*Returns:*
+
+This will return a list of dictionaries with the following structure.
+
+* `ID`: IncidentID for this incident.
+* `Username`: The username of the student this incident is about.
+* `Report`: The report from the prefects of what the student did.
+* `Date`: The date the incident occurred on, in YYYY-MM-DD format.
+
+## /query_sanction
+Queries the database for sanctions that have been submitted. Again, like [/query_student](#query_student) and [/query_incident](#query_incident), this will return all sanctions, or can be filtered with the GET parameters.
+
+*Arguments:*
+
+* `incident` (optional): Get the sanction with this IncidentID.
+* `starts_before` (optional): Get sanctions that start before this date, with the date in YYYY-MM-DD format.
+* `starts_after` (optional): Get sanctions that start after this date, with the date in YYYY-MM-DD format.
+* `ends_before` (optional): Get sanctions that end before this date, with the date in YYYY-MM-DD format.
+* `ends_after` (optional): Get sanctions that end after this date, with the date in YYYY-MM-DD format.
+* `id` (optional): Get the sanction with this SanctionID.
+
+*Returns:*
+
+This will return a list of dictionaries with the following structure.
+
+* `ID`: SanctionID for this sanction.
+* `StartDate`: Date this sanction starts, in YYYY-MM-DD format.
+* `EndDate`: Date this sanction ends, in YYYY-MM-DD format.
+* `Sanction`: The sanction being imposed.
+* `IncidentID`: The IncidentID of the incident this sanction belongs to.
