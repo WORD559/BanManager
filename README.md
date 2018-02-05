@@ -57,7 +57,7 @@ Below I have written the structure of the database used. Bold fields are primary
 |PublicKey     |TEXT          |No        |
 |PrivateKey    |BLOB          |Yes       |
 |AccountType   |INTEGER       |No        |
-|Email         |VARBINARY(256)|Yes       |
+|Email         |VARCHAR(254)  |No        |
 
 ## FileKeys
 |Field         |Datatype |Encrypted?|

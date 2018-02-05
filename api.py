@@ -124,7 +124,7 @@ def initialise(request):
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
                     "AccountType INTEGER NOT NULL,"+\
-                    "Email VARBINARY(256));")
+                    "Email VARCHAR(254));")
         #TEXT is used as these fields exceed 255 chars
         #The hash can be stored efficiently in a BINARY field
         #The private key is best stored in a BLOB. This allows the AES-enrypted private key to be stored as a binary object so as to be space-efficient. Also very compatible with the AES_ENCRYPT function of MySQL
@@ -977,6 +977,22 @@ def create_account(request):
     cur.close()
     db.close()
     return json.dumps({"status":"OK"})
+
+@api.route("set_email",["POST"])
+def modify_student(request):
+    user = get_username(request)
+    if not (request.form.has_key("user")):
+        username = user
+    else:
+        if username == user or get_rank(user) > 0:
+            username = str(request.form["user"])
+        else:
+            raise RankError
+    if not (request.form.has_key("email")):
+        email = None
+    else:
+        email = str(request.form["email"])
+    if not (request.form.has_key("
 
     
 api.start()
