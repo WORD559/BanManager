@@ -908,10 +908,7 @@ def change_password(request):
 
     # Now we need to delete the API key and make the user log in again
     # We do this by blanking the cookies and setting them to expire immediately
-    r = app.make_response(json.dumps({"status":"OK","data":"Logged out!"}))
-    r.set_cookie("API_SESSION",value="",expires=0)
-    r.set_cookie("Username",value="",expires=0)
-    return r
+    return logout(app)
 
 # Now we need to be able to create new users
 # New users need a Login name and password (which will create their encryption key)
@@ -978,21 +975,52 @@ def create_account(request):
     db.close()
     return json.dumps({"status":"OK"})
 
-@api.route("set_email",["POST"])
-def modify_student(request):
+# We may want to delete old accounts
+@api.route("delete_account",["POST"])
+def delete_account(request):
     user = get_username(request)
+    rank = get_rank(user)
+    # Get the user's private key -- this verifies they are logged in
     if not (request.form.has_key("user")):
         username = user
     else:
-        if username == user or get_rank(user) > 0:
-            username = str(request.form["user"])
-        else:
-            raise RankError
-    if not (request.form.has_key("email")):
-        email = None
+        username = request.form["user"]
+    if (username == user and bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))) or rank == 0: # This allows admins to do this for other users
+        username = str(request.form["user"])
     else:
-        email = str(request.form["email"])
-    if not (request.form.has_key("
+        raise RankError
+    if (request.form.has_key("pass")):
+        passwd = request.form["pass"]
+    else:
+        passwd = None
+    
+    db = connect_db()
+    cur = db.cursor()
+    # If the user is an admin, we need to be sure they're not the only remaining admin
+    if get_rank(username) == 0:
+        if cur.execute("SELECT * FROM Accounts WHERE AccountType = 0;") <= 1:
+            return json.dumps({"status":"BAD","error":"Can't delete only remaining administrator account."})
+    # If the user is deleting their own account, they should require their password
+    if username == user:
+        if passwd == None:
+            return json.dumps({"status":"BAD","error":"Missing password."})
+        hasher = SHA256.new()
+        hasher.update(passwd)
+        h = hasher.digest()
+        passwd = None
+        cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
+        if h != cur.fetchall()[0][0]:
+            raise AuthenticationError
+    # Now we can actually delete the account
+    cur.execute("DELETE FROM FileKeys WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
+    cur.execute("DELETE FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
+    db.commit()
+    cur.close()
+    db.close()
+    # Log the user out if they deleted their own account
+    if user == username:
+        return logout(app)
+    return json.dumps({"status":"OK"})
 
     
 api.start()

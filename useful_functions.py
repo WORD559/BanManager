@@ -146,3 +146,9 @@ def get_rank(user):
     if cur.execute(query) != 1:
         raise AuthenticationError
     return cur.fetchall()[0][0]
+
+def logout(app):
+    r = app.make_response(json.dumps({"status":"OK","data":"Logged out!"}))
+    r.set_cookie("API_SESSION",value="",expires=0)
+    r.set_cookie("Username",value="",expires=0)
+    return r
