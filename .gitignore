@@ -111,3 +111,4 @@ favicon.ico
 
 config/*
 !config/defaults.cnf
+photos/*

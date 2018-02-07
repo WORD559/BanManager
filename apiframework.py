@@ -8,6 +8,7 @@
 # It will be based on code from a previous project with the same goals in mind.
 
 from flask import Flask,request,Response,send_from_directory
+import configman
 from configman import ConfigError
 from specialexceptions import *
 import os

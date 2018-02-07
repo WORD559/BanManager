@@ -96,7 +96,8 @@ def initialise(request):
         cur.execute("CREATE TABLE Students "+\
                     "(Username VARBINARY({max_username_chars}) PRIMARY KEY NOT NULL,".format(**{"max_username_chars":get_AES_size(MAX_USERNAME_CHARS)})+\
                     "Forename VARBINARY({max_forename_length}),".format(**{"max_forename_length":get_AES_size(MAX_FORENAME_LENGTH)})+\
-                    "Surname VARBINARY({max_surname_length}));".format(**{"max_surname_length":get_AES_size(MAX_SURNAME_LENGTH)}))
+                    "Surname VARBINARY({max_surname_length}),".format(**{"max_surname_length":get_AES_size(MAX_SURNAME_LENGTH)})+\
+                    "PhotoID INTEGER NOT NULL AUTO_INCREMENT UNIQUE);")
         db.commit()
 
         #Username, report are encrypted
@@ -274,6 +275,10 @@ def add_new_student(request):
         surname = str(request.form["surname"])
     else:
         surname = None
+    if request.files.has_key("photo"):
+        photo = request.files["photo"]
+    else:
+        photo = None
 
     # Get the user's private key.
     key = get_private_key(request)
@@ -302,8 +307,14 @@ def add_new_student(request):
     except MySQLdb.IntegrityError:
         raise RecordExistsError
     db.commit()
+    cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":sql_sanitise(student),"AES":sql_sanitise(aes_key)}))
+    photoID = cur.fetchall()[0][0]
     cur.close()
     db.close()
+    
+    if photo != None:
+        if not upload_file(photo,photoID):
+            return json.dumps({"status":"OK","error":"Failed to upload photo."})
     return json.dumps({"status":"OK"})
 
 # This route allows the database to be queried, returning the decoded content of the database
@@ -662,6 +673,14 @@ def modify_user(request):
         surname = None
     else:
         surname = sql_sanitise(str(request.form["surname"]))
+    if not (request.form.has_key("delete_photo")):
+        delete_photo = False
+    else:
+        delete_photo = bool(request.form["delete_photo"])
+    if request.files.has_key("photo"):
+        photo = request.files["photo"]
+    else:
+        photo = None
 
     # Get the user's private key
     key = get_private_key(request)
@@ -708,14 +727,26 @@ def modify_user(request):
             columns.append("Surname = AES_ENCRYPT('{surname}','{AES}')".format(**{"surname":surname,"AES":aes_key}))
         if len(columns) > 0:
             query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":student,"AES":aes_key})
-        else:
-            return json.dumps({"status":"OK"})
-        db = connect_db()
-        cur = db.cursor()
-        cur.execute(query)
-        db.commit()
-        cur.close()
-        db.close()
+            db = connect_db()
+            cur = db.cursor()
+            cur.execute(query)
+            db.commit()
+            cur.close()
+            db.close()
+
+        if photo or delete_photo:
+            db = connect_db()
+            cur = db.cursor()
+            cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key}))
+            photoID = cur.fetchall()[0][0]
+            cur.close()
+            db.close()
+            
+            if photo != None:
+                if not upload_file(photo,photoID):
+                    return json.dumps({"status":"OK","error":"Failed to upload photo."})
+            if delete_photo:
+                delete_file(photoID)
         return json.dumps({"status":"OK"})
 
 @api.route("modify_incident",["POST"])

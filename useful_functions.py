@@ -3,9 +3,14 @@
 from specialexceptions import *
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+from Crypto.Cipher import AES
+from werkzeug.utils import secure_filename
 import json
 import MySQLdb
 import configman
+import os
+from PIL import Image
+from StringIO import StringIO
 
 
 # Escapes certain characters that would otherwise cause SQL errors
@@ -152,3 +157,26 @@ def logout(app):
     r.set_cookie("API_SESSION",value="",expires=0)
     r.set_cookie("Username",value="",expires=0)
     return r
+
+def upload_file(f,ID):
+    if not (f.filename.split(".")[-1].lower() in ["png","jpg","gif"]):
+        return False
+    upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
+    # Secure name is semi-redundant because of ID, but I want to be safe from stupitidy and dodgy file extensions
+    filename = secure_filename(str(ID)+".jpg")
+    delete_file(ID)
+    im = Image.open(f)
+    im = im.convert("RGB")
+    im.save(upload_path+"/"+filename)
+    return True
+
+def delete_file(ID):
+    upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
+    filename = secure_filename(str(ID)+".jpg")
+    if os.path.isfile(upload_path+"/"+filename):
+        os.remove(upload_path+"/"+filename)
+
+
+
+    
+    
