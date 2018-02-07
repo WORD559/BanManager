@@ -158,10 +158,9 @@ def initialise(request):
 ##    print key.exportKey()
 
     #After this, we need to generate a random AES key for the database
-    #The random range I have chosen generates a 256 bit key
+    #We will use os.urandom, as this is more secure for cryptographic purposes
 
-    database_key = random.randrange(57896044618658097711785492504343953926634992332820282019728792003956564819968,
-                                    115792089237316195423570985008687907853269984665640564039457584007913129639936)
+    database_key = os.urandom(32)
 ##    print "RAW:",database_key
     #This key is converted to hexadecimal, then encrypted with the administrator's key
     #The encrypted key is put in hex, and then entered using MySQL's UNHEX
