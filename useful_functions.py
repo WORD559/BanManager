@@ -261,7 +261,8 @@ def add_new_filekey(fileID,filekey,db,cur):
     cur.execute("SELECT Login,PublicKey FROM Accounts;")
     keys = dict(cur.fetchall())
     for user, k in keys.iteritems():
+        print user
         key = RSA.importKey(k)
         e_filekey = key.encrypt(filekey.encode("hex"),0)[0].encode("hex") # If we hex-encode it, it will be compatible with out get_file_key function
-        cur.execute("INSERT INTO FileKeys VALUES ('{user}','{file}',UNHEX('{key}'));".format(**{"user":sql_sanitise(user),"file":fileID,"key":sql_sanitise(e_filekey)}))
+        cur.execute("INSERT INTO FileKeys VALUES ('{user}','{file}',UNHEX('{key}'));".format(**{"user":user,"file":fileID,"key":sql_sanitise(e_filekey)}))
     db.commit()

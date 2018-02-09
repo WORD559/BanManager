@@ -165,7 +165,7 @@ def initialise(request):
     #This key is converted to hexadecimal, then encrypted with the administrator's key
     #The encrypted key is put in hex, and then entered using MySQL's UNHEX
     #This is to overcome an odd problem I was having where the encrypted string stored in the database was wrong
-    hex_key = hex(database_key)[2:].replace("L","")
+    hex_key = database_key.encode("hex")
 ##    print "HEX:",hex_key
     encrypted_key = key.encrypt(hex_key,0)[0].encode("hex")
 ##    print "ENC:",encrypted_key
