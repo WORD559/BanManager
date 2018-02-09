@@ -112,7 +112,7 @@ def get_file_key(user,RSA_key,File="+database"):
                          passwd=sql_cfg["SQLpassword"],
                          db=sql_cfg["DATABASE_NAME"])
     cur = db.cursor()
-    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '+database' AND Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
+    if cur.execute("SELECT DecryptionKey FROM FileKeys WHERE FileID = '{file}' AND Login = '{user}';".format(**{"user":sql_sanitise(user),"file":sql_sanitise(File)})) != 1:
         raise FileKeyError
     e_aes_key = cur.fetchall()[0][0]
 ##    print "ENC2:",e_aes_key.encode("hex")
@@ -158,25 +158,35 @@ def logout(app):
     r.set_cookie("Username",value="",expires=0)
     return r
 
-def upload_file(f,ID):
+def get_photoID(student,aes_key,cur):
+    cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key}))
+    photoID = cur.fetchall()[0][0]
+    return photoID
+
+def upload_file(f,ID,db,cur):
     if not (f.filename.split(".")[-1].lower() in ["png","jpg","gif"]):
         return False
     upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
     # Secure name is semi-redundant because of ID, but I want to be safe from stupitidy and dodgy file extensions
     filename = secure_filename(str(ID)+".jpg")
-    delete_file(ID)
+    delete_file(ID,db,cur)
     im = Image.open(f)
     im = im.convert("RGB")
-    encrypt_image(im,upload_path+"/"+filename)
-    return True
+    return encrypt_image(im,upload_path+"/"+filename)
 
-def delete_file(ID):
+def delete_file(ID,db,cur):
     upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
     filename = secure_filename(str(ID)+".jpg")
     if os.path.isfile(upload_path+"/"+filename):
         os.remove(upload_path+"/"+filename)
+    cur.execute("DELETE FROM FileKeys WHERE FileID = '{user}';".format(**{"user":ID}))
+    db.commit()
 
-def encrypt_image(im,path):
+def encrypt_image(im,path,chunksize=32*1024):
+    # We will encrypt the file in chunks rather than all at once for lower-resources systems
+    # While we must have the entire image file loaded into memory, we can reduce the load by encrypting it a few chunks at a time, rather than all at once
+    chunksize = (chunksize/16)*16 # Get the chunk size to a multiple of 16 for AES
+    
     # Save the image to a StringIO -- this keeps it in memory, rather than moving it to a temp file
     # This is more secure
     temp = StringIO()
@@ -203,13 +213,21 @@ def encrypt_image(im,path):
         # Write our IV so we can use it for decryption later
         output.write(IV)
 
-        # Now we encrypt the file and write it. I'll probably chunk it later.
-        output.write(aes.encrypt(temp.read()))
-
+        # Now we encrypt the file and write it.
+        if chunksize <= 0: # This allows it to be done all in one if the chunk size is set to 0 (or lower)
+            output.write(aes.encrypt(temp.read()))
+        else:
+            data = temp.read(chunksize)
+            while data != "":
+                output.write(aes.encrypt(data))
+                data = temp.read(chunksize)
+    print key.encode("hex")
     return key
     # Now it should be giggity good.
         
-def decrypt_image(key,path):
+def decrypt_image(key,path,chunksize=32*1024):
+    chunksize = (chunksize/16)*16
+    
     # Open the image and read the IV
     with open(path,"rb") as inp:
         IV = inp.read(16)
@@ -224,8 +242,26 @@ def decrypt_image(key,path):
         inp.seek(16)
 
         # Read in the data and decrypt to temp
-        temp.write(aes.decrypt(inp.read()))
+        if chunksize <= 0:
+            temp.write(aes.decrypt(inp.read()))
+        else:
+            data = inp.read(chunksize)
+            while data != "":
+                temp.write(aes.decrypt(data))
+                data = inp.read(chunksize)
+        
     im = Image.open(temp)
     return im
 
-    
+def add_new_filekey(fileID,filekey,db,cur):
+    """Requires sanitised fileID"""
+    # We need to fetch all the public keys for the accounts we have
+    # Thankfully, we can do this in a way that will allow us to make a dict
+    # These are nice and easy to iterate through
+    cur.execute("SELECT Login,PublicKey FROM Accounts;")
+    keys = dict(cur.fetchall())
+    for user, k in keys.iteritems():
+        key = RSA.importKey(k)
+        e_filekey = key.encrypt(filekey.encode("hex"),0)[0].encode("hex") # If we hex-encode it, it will be compatible with out get_file_key function
+        cur.execute("INSERT INTO FileKeys VALUES ('{user}','{file}',UNHEX('{key}'));".format(**{"user":sql_sanitise(user),"file":fileID,"key":sql_sanitise(e_filekey)}))
+    db.commit()

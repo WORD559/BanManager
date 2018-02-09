@@ -306,14 +306,18 @@ def add_new_student(request):
     except MySQLdb.IntegrityError:
         raise RecordExistsError
     db.commit()
-    cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":sql_sanitise(student),"AES":sql_sanitise(aes_key)}))
-    photoID = cur.fetchall()[0][0]
-    cur.close()
-    db.close()
+    photoID = get_photoID(sql_sanitise(student),sql_sanitise(aes_key),cur)
+    
     
     if photo != None:
-        if not upload_file(photo,photoID):
+        filekey = upload_file(photo,photoID,db,cur)
+        if not filekey:
             return json.dumps({"status":"OK","error":"Failed to upload photo."})
+        else:
+            # We need to encrypt this key and give every user access to it
+            add_new_filekey(photoID,filekey,db,cur)
+    cur.close()
+    db.close()
     return json.dumps({"status":"OK"})
 
 # This route allows the database to be queried, returning the decoded content of the database
@@ -656,10 +660,15 @@ def modify_user(request):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
         student = sql_sanitise(str(request.form["user"])).lower()
+    if not (request.form.has_key("delete_photo")):
+        delete_photo = False
+    else:
+        delete_photo = bool(request.form["delete_photo"])
     if not (request.form.has_key("delete")):
         delete = False
     else:
         delete = bool(request.form["delete"])
+        delete_photo = bool(request.form["delete"])
     if not (request.form.has_key("new_user")):
         new = None
     else:
@@ -672,10 +681,6 @@ def modify_user(request):
         surname = None
     else:
         surname = sql_sanitise(str(request.form["surname"]))
-    if not (request.form.has_key("delete_photo")):
-        delete_photo = False
-    else:
-        delete_photo = bool(request.form["delete_photo"])
     if request.files.has_key("photo"):
         photo = request.files["photo"]
     else:
@@ -736,16 +741,22 @@ def modify_user(request):
         if photo or delete_photo:
             db = connect_db()
             cur = db.cursor()
-            cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key}))
-            photoID = cur.fetchall()[0][0]
+            photoID = get_photoID(student,aes_key,cur)
+            
+    
+            if photo != None:
+                filekey = upload_file(photo,photoID,db,cur)
+                if not filekey:
+                    return json.dumps({"status":"OK","error":"Failed to upload photo."})
+                else:
+                    # We need to encrypt this key and give every user access to it
+                    add_new_filekey(photoID,filekey,db,cur)
+            
+            if delete_photo:
+                delete_file(photoID,db,cur)
+                
             cur.close()
             db.close()
-            
-            if photo != None:
-                if not upload_file(photo,photoID):
-                    return json.dumps({"status":"OK","error":"Failed to upload photo."})
-            if delete_photo:
-                delete_file(photoID)
         return json.dumps({"status":"OK"})
 
 @api.route("modify_incident",["POST"])
