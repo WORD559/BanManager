@@ -167,7 +167,7 @@ def upload_file(f,ID):
     delete_file(ID)
     im = Image.open(f)
     im = im.convert("RGB")
-    im.save(upload_path+"/"+filename)
+    encrypt_image(im,upload_path+"/"+filename)
     return True
 
 def delete_file(ID):
@@ -176,7 +176,56 @@ def delete_file(ID):
     if os.path.isfile(upload_path+"/"+filename):
         os.remove(upload_path+"/"+filename)
 
+def encrypt_image(im,path):
+    # Save the image to a StringIO -- this keeps it in memory, rather than moving it to a temp file
+    # This is more secure
+    temp = StringIO()
+    im.save(temp,"JPEG")
 
+    # Generate a random key
+    key = os.urandom(32)
+    # Generate an initialisation vector
+    IV = os.urandom(16)
+    # Set the block cipher mode to CBC -- essential for images
+    mode = AES.MODE_CBC
+    # Set up our AES encryptor object
+    aes = AES.new(key, mode, IV=IV)
 
-    
+    # Add nulls to the end of our file until the length is divisible by 16
+    while temp.len % 16 != 0:
+        temp.write("\0")
+
+    # Go back to the start of the file... this way we can read out the contents
+    temp.seek(0)
+
+    # Now we open our output file and begin to write the encrypted data
+    with open(path,"wb") as output:
+        # Write our IV so we can use it for decryption later
+        output.write(IV)
+
+        # Now we encrypt the file and write it. I'll probably chunk it later.
+        output.write(aes.encrypt(temp.read()))
+
+    return key
+    # Now it should be giggity good.
+        
+def decrypt_image(key,path):
+    # Open the image and read the IV
+    with open(path,"rb") as inp:
+        IV = inp.read(16)
+
+    # Make our AES object
+    mode = AES.MODE_CBC
+    aes = AES.new(key,mode,IV=IV)
+
+    temp = StringIO()
+    with open(path,"rb") as inp:
+        # Set the cursor position to 16 to skip the IV
+        inp.seek(16)
+
+        # Read in the data and decrypt to temp
+        temp.write(aes.decrypt(inp.read()))
+    im = Image.open(temp)
+    return im
+
     
