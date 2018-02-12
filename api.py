@@ -3,6 +3,7 @@
 import apiframework
 from specialexceptions import *
 from useful_functions import *
+from flask import send_file
 import MySQLdb
 import os
 import json
@@ -994,7 +995,7 @@ def create_account(request):
     # Now we need to get the FileKeys for the current user
     db = connect_db()
     cur = db.cursor()
-    cur.execute("SELECT FileID FROM FileKeys WHERE Login = '{user}';".format(**{"user":user}))
+    cur.execute("SELECT FileID FROM FileKeys WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)}))
     keys = [{"id":k[0]} for k in cur.fetchall()]
     cur.close()
     db.close()
@@ -1063,5 +1064,37 @@ def delete_account(request):
         return logout(app)
     return json.dumps({"status":"OK"})
 
+# Since we can upload photos, we want to be able get a user's photo
+@api.route("photo",["GET"])
+def get_photo(request):
+    if not (request.args.has_key("user")):
+        return json.dumps({"status":"BAD","error":"Missing username!"})
+    else:
+        student = request.args["user"]
+        
+    user = get_username(request)
+    
+    # Get the user's private key
+    key = get_private_key(request)
+
+    # Get the database AES key
+    aes_key = sql_sanitise(get_file_key(user,key))
+
+    # Get the student's photoID
+    db = connect_db()
+    cur = db.cursor()
+    photoID = get_photoID(sql_sanitise(student),aes_key,cur)
+    cur.close()
+    db.close()
+
+    # Get the photo's filekey
+    photokey = get_file_key(user,key,str(photoID))
+
+    # And decrypt the image, to a StringIO
+    path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
+    path += "/"+str(photoID)+".jpg"
+    im = decrypt_image(photokey,path,stringio=True)
+
+    return send_file(im,mimetype="image/jpeg")
     
 api.start()

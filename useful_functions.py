@@ -34,7 +34,7 @@ def add_new_account(username,password,level,db):
     level = int(level)
     hasher = SHA256.new()
     hasher.update(password)
-    pwhash = hasher.digest() # This generates our password hash to validate the password
+    pwhash = hasher.digest() # This generates our password hash to validate the login
 
     #Now we hash the username + the password + the hash to make an AES key
     hasher = SHA256.new()
@@ -225,7 +225,7 @@ def encrypt_image(im,path,chunksize=32*1024):
     return key
     # Now it should be giggity good.
         
-def decrypt_image(key,path,chunksize=32*1024):
+def decrypt_image(key,path,chunksize=32*1024,stringio=False):
     chunksize = (chunksize/16)*16
     
     # Open the image and read the IV
@@ -249,8 +249,11 @@ def decrypt_image(key,path,chunksize=32*1024):
             while data != "":
                 temp.write(aes.decrypt(data))
                 data = inp.read(chunksize)
-        
-    im = Image.open(temp)
+    if not stringio:
+        im = Image.open(temp)
+    else:
+        im = temp
+        im.seek(0)
     return im
 
 def add_new_filekey(fileID,filekey,db,cur):
@@ -261,7 +264,6 @@ def add_new_filekey(fileID,filekey,db,cur):
     cur.execute("SELECT Login,PublicKey FROM Accounts;")
     keys = dict(cur.fetchall())
     for user, k in keys.iteritems():
-        print user
         key = RSA.importKey(k)
         e_filekey = key.encrypt(filekey.encode("hex"),0)[0].encode("hex") # If we hex-encode it, it will be compatible with out get_file_key function
         cur.execute("INSERT INTO FileKeys VALUES ('{user}','{file}',UNHEX('{key}'));".format(**{"user":user,"file":fileID,"key":sql_sanitise(e_filekey)}))
