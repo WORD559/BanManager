@@ -123,6 +123,7 @@ def initialise(request):
         cur.execute("CREATE TABLE Accounts "+\
                     "(Login VARCHAR({max_login_length}) PRIMARY KEY NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
                     "PasswordHash BINARY(32) NOT NULL,"+\
+                    "Salt BINARY(8) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
                     "AccountType INTEGER NOT NULL,"+\
@@ -218,23 +219,28 @@ def user_login(request):
     # Log into the SQL database
     db = connect_db()
 
-    # Hash the password provided
-    hasher = SHA256.new()
-    hasher.update(passwd)
-    h = hasher.digest()
-
     # Get the hash stored in the database and compare the hashes
     cur = db.cursor()
     # If no results are returned, the account doesn't exist
-    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
+    if cur.execute("SELECT PasswordHash,Salt FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
-    server_h = cur.fetchall()[0][0]
+    server_h,salt = cur.fetchall()[0]
     cur.close()
     db.close()
+
+    # Hash the password provided
+    hasher = SHA256.new()
+    hasher.update(salt+passwd)
+    h = hasher.digest()
 
     # If the hashes are not equal, the password is incorrect
     if h != server_h:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
+
+    # Generate an unsalted hash for the key
+    hasher = SHA256.new()
+    hasher.update(passwd)
+    h = hasher.digest()
     
     # Now we must generate the key for decrypting the private key
     hasher = SHA256.new()
@@ -918,22 +924,26 @@ def change_password(request):
     # Validate that the old password is correct.
     db = connect_db()
     cur = db.cursor()
-    if cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
+    if cur.execute("SELECT PasswordHash,Salt FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(user)})) != 1:
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
-    pwhash = cur.fetchall()[0][0]
+    pwhash,salt = cur.fetchall()[0]
     hasher = SHA256.new()
-    hasher.update(passwd)
+    hasher.update(salt+passwd)
     if pwhash != hasher.digest():
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
 
     # Old password is correct, generate the new password hash
+    salt = os.urandom(8)
     hasher = SHA256.new()
-    hasher.update(new)
+    hasher.update(salt+new)
     pwhash = hasher.digest()
 
     # Make the AES key
     hasher = SHA256.new()
-    hasher.update(user+new+pwhash)
+    hasher.update(new)
+    h = hasher.digest()
+    hasher = SHA256.new()
+    hasher.update(user+new+h)
     aes_key = hasher.digest()
 
     # Load and export the private key
@@ -943,7 +953,7 @@ def change_password(request):
     # Connect to the database, add the new hash, and re-encrypt the private key
     db = connect_db()
     cur = db.cursor()
-    cur.execute("UPDATE Accounts SET PasswordHash = UNHEX('{hash}'), PrivateKey = AES_ENCRYPT('{RSA}','{AES}') WHERE Login = '{user}';".format(**{"AES":sql_sanitise(aes_key),"hash":pwhash.encode("hex"),"RSA":sql_sanitise(exported),"user":user}))
+    cur.execute("UPDATE Accounts SET PasswordHash = UNHEX('{hash}'), Salt = UNHEX('{salt}'), PrivateKey = AES_ENCRYPT('{RSA}','{AES}') WHERE Login = '{user}';".format(**{"AES":sql_sanitise(aes_key),"hash":pwhash.encode("hex"),"salt":salt.encode("hex"),"RSA":sql_sanitise(exported),"user":user}))
     db.commit()
     cur.close()
     db.close()
@@ -1046,12 +1056,15 @@ def delete_account(request):
     if username == user:
         if passwd == None:
             return json.dumps({"status":"BAD","error":"Missing password."})
+        cur.execute("SELECT PasswordHash,Salt FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
+        server_h,salt = cur.fetchall()[0]
         hasher = SHA256.new()
-        hasher.update(passwd)
+        # For some reason, this produces a UnicodeDecodeError. Concatenating the hex-encoded versions and then un-hexing it solved this problem.
+        to_hash = (salt.encode("hex")+passwd.encode("hex")).decode("hex")
+        hasher.update(to_hash)
         h = hasher.digest()
         passwd = None
-        cur.execute("SELECT PasswordHash FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
-        if h != cur.fetchall()[0][0]:
+        if h != server_h:
             raise AuthenticationError
     # Now we can actually delete the account
     cur.execute("DELETE FROM FileKeys WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))

@@ -34,7 +34,12 @@ def add_new_account(username,password,level,db):
     level = int(level)
     hasher = SHA256.new()
     hasher.update(password)
-    pwhash = hasher.digest() # This generates our password hash to validate the login
+    pwhash = hasher.digest() # This generates our password hash to make the key
+    # Now we need a salt and salted hash for security
+    hasher = SHA256.new()
+    salt = os.urandom(8)
+    hasher.update(salt+password)
+    salted_hash = hasher.digest() # This is the hash we use to validate logins
 
     #Now we hash the username + the password + the hash to make an AES key
     hasher = SHA256.new()
@@ -54,9 +59,10 @@ def add_new_account(username,password,level,db):
 
 
     cur = db.cursor()
-    cur.execute("INSERT INTO Accounts(Login,PasswordHash,PublicKey,PrivateKey,AccountType) VALUES "+\
+    cur.execute("INSERT INTO Accounts(Login,PasswordHash,Salt,PublicKey,PrivateKey,AccountType) VALUES "+\
                 "('{username}',\n".format(**{"username":sql_sanitise(username)})+\
-                "UNHEX('{hash}'),\n".format(**{"hash":pwhash.encode("hex")})+\
+                "UNHEX('{hash}'),\n".format(**{"hash":salted_hash.encode("hex")})+\
+                "UNHEX('{salt}'),\n".format(**{"salt":salt.encode("hex")})+\
                 "'{public_RSA}',\n".format(**{"public_RSA":sql_sanitise(key.publickey().exportKey())})+\
                 "AES_ENCRYPT('{RSA}','{AES}'),\n".format(**{"RSA":sql_sanitise(exported),"AES":sql_sanitise(aes_key)})+\
                 "{level})".format(**{"level":level}))
