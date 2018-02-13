@@ -1,5 +1,7 @@
 ##API for a prefect ban management system
 
+from flask import Flask
+from flask_cors import CORS
 import apiframework
 from specialexceptions import *
 from useful_functions import *
@@ -15,8 +17,19 @@ from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
 
+# Make the Flask application for the whole package and pass it to the framework
+# This allows the application to be run as a package rather than as modules
+# This will ultimately make the execution process easier
+# Once the package is installed, the FLASK_APP environment varibale just needs to be set to BanManager, and then `flask run` can be used to start the system
+apiframework.app = Flask(__name__)
+CORS(apiframework.app)
 app = apiframework.app
 api = apiframework.API()
+
+# Since we're now a package, we need to move our current working directory to the package directory
+os.chdir(app.root_path)
+
+
 
 # Allows a client to check the status of the database
 # Good for things such as setup procedures

@@ -15,8 +15,8 @@ from specialexceptions import *
 import os
 import json
 
-app = Flask(__name__)
-CORS(app)
+##app = Flask(__name__)
+##CORS(app)
 
 class API(object):
     def __init__(self):
