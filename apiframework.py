@@ -19,7 +19,8 @@ import json
 ##CORS(app)
 
 class API(object):
-    def __init__(self):
+    def __init__(self,app):
+        self.app = app
         self.functions = {} # define an empty dictionary.
         # Requests received will be looked up in this dictionary to find the
         # appropriate function
@@ -30,7 +31,7 @@ class API(object):
         # The start of the URL is the base route. This is defined when calling this function
         # Next is the function requested
         # Function arguments will be given in the request
-        @app.route(route+"/<f>",methods=["GET","POST","PUT","DELETE"])
+        @self.app.route(route+"/<f>",methods=["GET","POST","PUT","DELETE"])
         def main(f):
             if not self.functions.has_key(f):
                 return Response(status=404) # 404 if function does not exist
@@ -65,7 +66,7 @@ class API(object):
                     return send_from_directory(app.root_path,"user.jpg",
                                                mimetype="image/jpeg")
 
-        @app.route("/favicon.ico")
+        @self.app.route("/favicon.ico")
         def return_favicon():
             if self.favicon != None:
                 return send_from_directory(self.favicon[0],self.favicon[1],
@@ -90,7 +91,8 @@ class API(object):
             self.favicon = (os.path.dirname(path),os.path.basename(path))
             
 class Client(object):
-    def __init__(self):
+    def __init__(self,app):
+        self.app = app
         self.routes = {}
 
     def start(self,route="/"):
@@ -98,7 +100,7 @@ class Client(object):
         # The start of the URL is the base route. This is defined when calling this function
         # Next is the function requested
         # Function arguments will be given in the request
-        @app.route(route+"/<page>",methods=["GET","POST","PUT","DELETE"])
+        @self.app.route(route+"/<page>",methods=["GET","POST","PUT","DELETE"])
         def main(f):
             if not self.routes.has_key(page):
                 return Response(status=404) # 404 if page does not exist

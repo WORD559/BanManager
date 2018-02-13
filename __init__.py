@@ -21,10 +21,10 @@ from Crypto.Cipher import AES
 # This allows the application to be run as a package rather than as modules
 # This will ultimately make the execution process easier
 # Once the package is installed, the FLASK_APP environment varibale just needs to be set to BanManager, and then `flask run` can be used to start the system
-apiframework.app = Flask(__name__)
-CORS(apiframework.app)
-app = apiframework.app
-api = apiframework.API()
+app = Flask(__name__)
+CORS(app)
+##app = apiframework.app
+api = apiframework.API(app)
 
 # Since we're now a package, we need to move our current working directory to the package directory
 os.chdir(app.root_path)
