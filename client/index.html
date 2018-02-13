@@ -1,0 +1,16 @@
+<html>
+<head>
+<script type="text/javascript" src="makeasync.js"></script>
+<script>
+function status_callback(data) {
+    var response = JSON.parse(data);
+    if (!(response["data"]["initialised"])) {
+        window.location = "/setup";
+    }
+}
+MakeAsyncRequest("GET","/api/v1/status",status_callback);
+</script>
+</head>
+<body>
+</body>
+</html>

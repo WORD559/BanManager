@@ -1127,3 +1127,14 @@ def get_photo(request):
     return send_file(im,mimetype="image/jpeg")
     
 api.start("/api/v1")
+
+
+# Now we'll start a client object so we can register webpages to be hosted by the Flask server
+# While we could just register them normally (e.g. @app.route), this method will allow automatic error handling
+client = apiframework.Client(app)
+
+client.add_route("index.html","client/index.html")
+client.add_route("makeasync.js","client/makeasync.js")
+client.add_route("setup","client/setup.html")
+
+client.start()
