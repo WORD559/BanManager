@@ -32,7 +32,7 @@ class API(object):
         # Next is the function requested
         # Function arguments will be given in the request
         @self.app.route(route+"/<f>",methods=["GET","POST","PUT","DELETE"])
-        def main(f):
+        def api_main(f):
             if not self.functions.has_key(f):
                 return Response(status=404) # 404 if function does not exist
             else:
@@ -95,18 +95,32 @@ class Client(object):
         self.app = app
         self.routes = {}
 
-    def start(self,route="/"):
-        # The base Flask route is set up. All requests will come through this route.
-        # The start of the URL is the base route. This is defined when calling this function
-        # Next is the function requested
-        # Function arguments will be given in the request
-        @self.app.route(route+"/<page>",methods=["GET","POST","PUT","DELETE"])
-        def main(f):
+    def start(self,route=""):
+        # This sets up a route that requires a page argument to load
+        # This shouldn't conflict with the api route
+        # We register pages to this route which are served by Flask
+        # Rather than using templates, I have opted for sending files
+        # By this method, we lose the ability to fill-in the page with data from the flask server, but makes it very easy to host images, js, css, etc. on the flask server
+        # Thankfully, we don't need templates, since the pages will all interface with the api!
+        @self.app.route(route+"/<path:page>",methods=["GET","POST","PUT","DELETE"])
+        def client_main(page):
             if not self.routes.has_key(page):
                 return Response(status=404) # 404 if page does not exist
             else:
                 return send_from_directory(self.routes[page][0],
                                            self.routes[page][1])
+
+        # We have to handle the index page separately from everything else
+        @self.app.route("/",methods=["GET","POST","PUT","DELETE"])
+        def index_page():
+            if not self.routes.has_key("/"):
+                return Response(status=404) # 404 if page does not exist
+            else:
+                return send_from_directory(self.routes["/"][0],
+                                           self.routes["/"][1])
                     
     def add_route(self,name,page):
-        self.routes[name] = (os.path.dirname(page),os.path.basename(page))
+        data = (os.path.dirname(page),os.path.basename(page))
+        if os.path.basename(name)[:6] == "index.": # This allows our index pages to be registered to the / as well as the /<name> -- something we must do manually in Flask
+            self.routes[os.path.dirname(name)+"/"] = data
+        self.routes[name] = data
