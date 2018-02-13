@@ -8,10 +8,10 @@ from werkzeug.utils import secure_filename
 import json
 import MySQLdb
 import configman
+from configman import ConfigError
 import os
 from PIL import Image
 from StringIO import StringIO
-
 
 # Escapes certain characters that would otherwise cause SQL errors
 def sql_sanitise(data):
