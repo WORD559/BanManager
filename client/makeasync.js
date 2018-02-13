@@ -5,7 +5,7 @@ function MakeAsyncRequest(method,url,callback,data=null,content_type="applicatio
             callback(xhttp.responseText);
         }
     };
-    console.log(data);
+    //console.log(data);
     xhttp.open(method,url,true);
     xhttp.setRequestHeader("Content-type",content_type);
     xhttp.send(data);
