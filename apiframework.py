@@ -59,6 +59,9 @@ class API(object):
                     return json.dumps({"status":"BAD","error":"Related record does not exist."})
                 except RankError:
                     return json.dumps({"status":"BAD","error":"User not a high enough rank to perform that operation."})
+                except PhotoError:
+                    return send_from_directory(app.root_path,"user.jpg",
+                                               mimetype="image/jpeg")
 
         @app.route("/favicon.ico")
         def return_favicon():

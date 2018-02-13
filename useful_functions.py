@@ -165,8 +165,10 @@ def logout(app):
     return r
 
 def get_photoID(student,aes_key,cur):
-    cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key}))
-    photoID = cur.fetchall()[0][0]
+    if cur.execute("SELECT PhotoID FROM Students WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key})) == 1:
+        photoID = cur.fetchall()[0][0]
+    else:
+        raise PhotoError()
     return photoID
 
 def upload_file(f,ID,db,cur):

@@ -17,3 +17,6 @@ class RecordExistsError(Exception):
 
 class RankError(Exception):
     pass
+
+class PhotoError(Exception):
+    pass
