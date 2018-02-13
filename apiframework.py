@@ -8,6 +8,7 @@
 # It will be based on code from a previous project with the same goals in mind.
 
 from flask import Flask,request,Response,send_from_directory
+from flask_cors import CORS
 import configman
 from configman import ConfigError
 from specialexceptions import *
@@ -15,6 +16,7 @@ import os
 import json
 
 app = Flask(__name__)
+CORS(app)
 
 class API(object):
     def __init__(self):
@@ -87,3 +89,22 @@ class API(object):
         else:
             self.favicon = (os.path.dirname(path),os.path.basename(path))
             
+class Client(object):
+    def __init__(self):
+        self.routes = {}
+
+    def start(self,route="/"):
+        # The base Flask route is set up. All requests will come through this route.
+        # The start of the URL is the base route. This is defined when calling this function
+        # Next is the function requested
+        # Function arguments will be given in the request
+        @app.route(route+"/<page>",methods=["GET","POST","PUT","DELETE"])
+        def main(f):
+            if not self.routes.has_key(page):
+                return Response(status=404) # 404 if page does not exist
+            else:
+                return send_from_directory(self.routes[page][0],
+                                           self.routes[page][1])
+                    
+    def add_route(self,name,page):
+        self.routes[name] = (os.path.dirname(page),os.path.basename(page))
