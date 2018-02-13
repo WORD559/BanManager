@@ -1114,7 +1114,10 @@ def get_photo(request):
     db.close()
 
     # Get the photo's filekey
-    photokey = get_file_key(user,key,str(photoID))
+    try:
+        photokey = get_file_key(user,key,str(photoID))
+    except FileKeyError:
+        raise PhotoError
 
     # And decrypt the image, to a StringIO
     path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]

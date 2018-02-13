@@ -63,7 +63,7 @@ class API(object):
                 except RankError:
                     return json.dumps({"status":"BAD","error":"User not a high enough rank to perform that operation."})
                 except PhotoError:
-                    return send_from_directory(app.root_path,"user.jpg",
+                    return send_from_directory(self.app.root_path,"user.jpg",
                                                mimetype="image/jpeg")
 
         @self.app.route("/favicon.ico")
@@ -86,7 +86,7 @@ class API(object):
     # Function for properly setting the favicon
     def set_favicon(self,path):
         if "/" not in path and "\\" not in path:
-            self.favicon = (app.root_path,path)
+            self.favicon = (self.app.root_path,path)
         else:
             self.favicon = (os.path.dirname(path),os.path.basename(path))
             
