@@ -1,16 +1,33 @@
 <html>
+<!--
+My intention for this page is for it to sort of be a dashboard.
+I want to try and keep that on the index page for bookmarks and whatnot.
+This can probably be accomplished with a hidden iframe if the need arises, but there's probably no need.
+-->
 <head>
 <script type="text/javascript" src="makeasync.js"></script>
 <script>
 function status_callback(data) {
     var response = JSON.parse(data);
     if (!(response["data"]["initialised"])) {
-        window.location = "/setup";
+        window.location = "/setup"; // If not already initialised, go to the setup page
     }
+    if (!(response["data"]["logged_in"])) {
+        window.location = "/login"; // If not already logged in, go to the login page
+    }
+    setup_dash(response);
+}
+function setup_dash(status) {
+    // Remove the ajax loader
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+    console.log(status);
+    
 }
 MakeAsyncRequest("GET","/api/v1/status",status_callback);
 </script>
 </head>
 <body>
+<img src="/ajax-loader.gif" id="ajax-loader"/>
 </body>
 </html>

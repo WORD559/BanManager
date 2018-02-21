@@ -34,7 +34,7 @@ os.chdir(app.root_path)
 # Allows a client to check the status of the database
 # Good for things such as setup procedures
 @api.route("status")
-def status():
+def status(request):
     data = {}
     if "SQLusers.cnf" not in os.listdir("config"):
         data["initialised"] = False
@@ -42,6 +42,13 @@ def status():
         data["initialised"] = False
     else:
         data["initialised"] = True
+    try:
+        get_private_key(request) # This will let me check to see if they're logged in
+        data["logged_in"] = True
+        data["user"] = get_username(request)
+    except AuthenticationError:
+        data["logged_in"] = False
+        data["user"] = None
     return json.dumps({"status":"OK","data":data})
 
 # Requires an administrative user and password for the SQL server
