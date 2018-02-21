@@ -3,19 +3,24 @@
 <script type="text/javascript" src="makeasync.js"></script>
 <script>
 function setup_db() {
-    var form = document.getElementById("mysql_form");
-    var data = "user=" + form.elements["user"].value + "&pass=" + form.elements["pass"].value + "&host=" + form.elements["host"].value;
+    var button = document.getElementById("submit_button");
+    var form = button.parentNode;
+    SetAjaxLoader(button);
+    var data = encodeFormData({user,form.elements["user"].value,
+                               pass,form.elements["pass"].value,
+                               host,form.elements["host"].value});
     MakeAsyncRequest("POST","/api/v1/init",setup_callback,data,"application/x-www-form-urlencoded");
 }
 function setup_callback(data) {
     var response = JSON.parse(data);
+    var f = document.getElementById("mysql_form");
     if (response["data"]["initialised"]) {
-        var f = document.getElementById("mysql_form");
         f.parentNode.removeChild(f);
-        document.getElementById("admin_pw").innerHTML = "Username: admin<br>Password: "+response["data"]["password"]+"<br><br>";
-        document.getElementById("admin_note").innerHTML = "Please make a note of these login credentials. If you lose them, you will not be able to access the system.";
+        document.getElementById("admin_pw").innerHTML = "Username: <code>admin</code><br>Password: <code>"+response["data"]["password"]+"</code><br><br>";
+        document.getElementById("admin_note").innerHTML = "Please make a note of these login credentials. If you lose them, you will not be able to access the system.<br><br>You can now <a href='/login'>log in</a>.";
     } else {
         document.getElementById("admin_note").innerHTML = "Your server credentials are incorrect. Please try again.";
+        UnsetAjaxLoader("submit_button","Submit",setup_db);
     }
 }
 </script>
@@ -24,12 +29,12 @@ function setup_callback(data) {
 <p>Welcome to the setup page. Your database will now be set up, after which you will be able to log in!</p>
 <p>Please note, you must already have a MySQL server where you are able to create a new database!</p>
 <br>
-<form id="mysql_form">
+<form id="mysql_form" action="">
 <p>Please enter your login credentials for your MySQL server. Please be aware that these credentials must be stored in plaintext. It is recommended that you do NOT use the root user, and instead create a new user for this system on your MySQL server.</p>
 <p>MySQL Username:  <input name="user" type="text"></p>
 <p>MySQL Password:  <input name="pass" type="password"></p>
 <p>Server Hostname:  <input name="host" type="text" value="localhost"></p>
-<button type="button" onclick="setup_db(); return false;">Submit</button>
+<input id="submit_button" type="submit" onclick="setup_db(); return false;">
 </form>
 
 <p id="admin_pw"></p>
