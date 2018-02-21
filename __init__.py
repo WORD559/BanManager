@@ -1136,5 +1136,7 @@ client = apiframework.Client(app)
 client.add_route("index.html","client/index.html")
 client.add_route("makeasync.js","client/makeasync.js")
 client.add_route("setup","client/setup.html")
+client.add_route("ajax-loader.gif","client/ajax-loader.gif")
+client.add_route("login","client/login.html")
 
 client.start()

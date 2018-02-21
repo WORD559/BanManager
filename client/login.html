@@ -1,0 +1,38 @@
+<html>
+<head>
+<script type="text/javascript" src="makeasync.js"></script>
+<script>
+function login_user() {
+    var button = document.getElementById("login_button");
+    var form = button.parentNode;
+    SetAjaxLoader(button);
+    var data = encodeFormData({user:form.elements["user"].value,
+                               pass:form.elements["pass"].value});
+    MakeAsyncRequest("POST","/api/v1/login",login_callback,data,"application/x-www-form-urlencoded");
+}
+
+function login_callback(data) {
+    var response = JSON.parse(data);
+    console.log(response);
+    var f = document.getElementById("login_form");
+    var status_note = document.getElementById("status");
+    if (response["status"] == "OK") {
+        f.parentNode.removeChild(f);
+        status_note.innerHTML = "Logged in!";
+        window.location = "/";
+    } else {
+        UnsetAjaxLoader("login_button","Login",login_user);
+        status_note.innerHTML = "Login details incorrect!";
+    }
+}
+</script>
+</head>
+<body>
+<form id="login_form" action="">
+<p>Username:  <input type="text" name="user"></p>
+<p>Password: <input type="password" name="pass"></p>
+<input id="login_button" type="submit" value="Login" onclick="login_user(); return false;">
+</form>
+<p id="status"></p>
+</body>
+</html>
