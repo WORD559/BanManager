@@ -20,7 +20,7 @@ function encodeFormData(d) {
         } else {
             set = true;
         }
-        encoded += encodeURIComponent(key)+"="+encodeURIComponent(d[key]);
+        encoded += encodeURIComponent(key)+"="+encodeURIComponent(d[key]).replace("%20","+");
     }
     return encoded;
 }        
