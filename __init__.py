@@ -46,9 +46,11 @@ def status(request):
         get_private_key(request) # This will let me check to see if they're logged in
         data["logged_in"] = True
         data["user"] = get_username(request)
+        data["rank"] = get_rank(data["user"])
     except AuthenticationError:
         data["logged_in"] = False
         data["user"] = None
+        data["rank"] = None
     return json.dumps({"status":"OK","data":data})
 
 # Requires an administrative user and password for the SQL server
