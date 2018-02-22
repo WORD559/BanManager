@@ -14,9 +14,13 @@ from PIL import Image
 from StringIO import StringIO
 
 # Escapes certain characters that would otherwise cause SQL errors
-def sql_sanitise(data):
-    return data.replace("\\","\\\\").replace("'","\\'").replace(";","\\;").replace("_","\\_").replace("%","\\%")
-
+def sql_sanitise(data,underscore=True,percent=True):
+    data = data.replace("\\","\\\\").replace("'","\\'").replace(";","\\;")#.replace("_","\\_").replace("%","\\%")
+    if underscore:
+        data = data.replace("_","\\_")
+    if percent:
+        data = data.replace("%","\\%")
+    return data
 # Returns the size an string of length `data_size` would be if padded and AES encrypted
 def get_AES_size(data_size):
     return 16*((data_size/16)+1)
