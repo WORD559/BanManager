@@ -292,7 +292,7 @@ def add_new_student(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = str(request.form["user"].lower())
+        student = str(request.form["user"].lower()).replace(" ","_")
     if request.form.has_key("forename"):
         forename = str(request.form["forename"])
     else:
@@ -324,7 +324,7 @@ def add_new_student(request):
         data["forename"] = ",AES_ENCRYPT('"+sql_sanitise(forename)+"','"+sql_sanitise(aes_key)+"')"
     if surname != None:
         data["surname"] = ",AES_ENCRYPT('"+sql_sanitise(surname)+"','"+sql_sanitise(aes_key)+"')"
-    query += sql_sanitise(student)+"','{key}'){forename}{surname});".format(**data)
+    query += sql_sanitise(student,underscore=False,percent=False)+"','{key}'){forename}{surname});".format(**data)
 
     db = connect_db()
     cur = db.cursor()
@@ -356,11 +356,11 @@ def add_new_student(request):
 def student_query(request):
     #sql_cfg = get_SQL_config()
     user = get_username(request)
-
+    print request.args
     Filter = {}
     try:
         if request.args.has_key("user"):
-            Filter["user"] = str(request.args["user"]).lower()
+            Filter["user"] = str(request.args["user"]).lower().split(" ")
         if request.args.has_key("forename"):
             Filter["forename"] = str(request.args["forename"]).lower()
         if request.args.has_key("surname"):
@@ -392,10 +392,18 @@ def student_query(request):
             where = True
         else:
             query += " AND "
-        if like:
-            query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
-        else:
-            query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
+        query+= "("
+        OR = False
+        for user in Filter["user"]:
+            if OR:
+                query+= " OR "
+            else:
+                OR = True
+            if like:
+                query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(user,underscore=False,percent=False),"AES":sql_sanitise(aes_key)})
+            else:
+                query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(user,underscore=False,percent=False),"AES":sql_sanitise(aes_key)})
+        query+=")"
     # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
     if Filter.has_key("forename"):
         if where == False:
@@ -438,7 +446,7 @@ def add_new_incident(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = sql_sanitise(str(request.form["user"].lower()))
+        student = sql_sanitise(str(request.form["user"].lower()),underscore=False,percent=False)
     if not (request.form.has_key("report")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
@@ -484,7 +492,7 @@ def incident_query(request):
         if request.args.has_key("after"):
             Filter["after"] = str(request.args["after"])
         if request.args.has_key("id"):
-            Filter["id"] = str(request.args["id"])
+            Filter["id"] = str(request.args["id"]).split(" ")
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -506,7 +514,7 @@ def incident_query(request):
             where = True
         else:
             query += " AND "
-        query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(Filter["user"]),"AES":sql_sanitise(aes_key)})
+        query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(Filter["user"],underscore=False,percent=False),"AES":sql_sanitise(aes_key)})
     # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
     if Filter.has_key("before"):
         if where == False:
@@ -528,7 +536,16 @@ def incident_query(request):
             where = True
         else:
             query += " AND "
-        query += "IncidentID = {id}".format(**{"id":Filter["id"]})
+        query+="("
+        OR = False
+        for ID in Filter["id"]:
+            if OR:
+                query += " OR "
+            else:
+                OR = True
+            
+            query += "IncidentID = {id}".format(**{"id":ID})
+        query+=")"
 
     # Connect to the database and run the query
     db = connect_db()
@@ -594,7 +611,7 @@ def sanction_query(request):
     Filter = {}
     try:
         if request.args.has_key("incident"):
-            Filter["incident"] = int(request.args["incident"])
+            Filter["incident"] = int(request.args["incident"]).split(" ")
         if request.args.has_key("starts_before"):
             Filter["starts_before"] = str(request.args["starts_before"])
         if request.args.has_key("starts_after"):
@@ -604,7 +621,7 @@ def sanction_query(request):
         if request.args.has_key("ends_after"):
             Filter["ends_after"] = str(request.args["ends_after"])
         if request.args.has_key("id"):
-            Filter["id"] = str(request.args["id"])
+            Filter["id"] = str(request.args["id"]).split(" ")
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -626,7 +643,15 @@ def sanction_query(request):
             where = True
         else:
             query += " AND "
-        query += "IncidentID = {incident}".format(**{"incident":Filter["incident"]})
+        query += "("
+        OR = False
+        for incident in Filter["incident"]:
+            if OR:
+                query += " OR "
+            else:
+                OR = True
+            query += "IncidentID = {incident}".format(**{"incident":incident})
+        query += ")"
     # Weirdly, the decrypted string must be converted to utf8 before the lower will work with it properly. Yay SQL.
     if Filter.has_key("starts_before"):
         if where == False:
@@ -663,7 +688,15 @@ def sanction_query(request):
             where = True
         else:
             query += " AND "
-        query += "SanctionID = {id}".format(**{"id":Filter["id"]})
+        query+="("
+        OR = False
+        for ID in Filter["id"]:
+            if OR:
+                query += " OR "
+            else:
+                OR = True
+            query += "SanctionID = {id}".format(**{"id":ID})
+        query+=")"
 
     # Connect to the database and run the query
     db = connect_db()
@@ -686,7 +719,7 @@ def modify_user(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = sql_sanitise(str(request.form["user"])).lower()
+        student = sql_sanitise(str(request.form["user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("delete_photo")):
         delete_photo = False
     else:
@@ -699,7 +732,7 @@ def modify_user(request):
     if not (request.form.has_key("new_user")):
         new = None
     else:
-        new = sql_sanitise(str(request.form["new_user"])).lower()
+        new = sql_sanitise(str(request.form["new_user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("forename")):
         forename = None
     else:
@@ -1116,7 +1149,7 @@ def get_photo(request):
     # Get the student's photoID
     db = connect_db()
     cur = db.cursor()
-    photoID = get_photoID(sql_sanitise(student),aes_key,cur)
+    photoID = get_photoID(sql_sanitise(student,underscore=False,percent=False),aes_key,cur)
     cur.close()
     db.close()
 
@@ -1142,8 +1175,10 @@ client = apiframework.Client(app)
 
 client.add_route("index.html","client/index.html")
 client.add_route("makeasync.js","client/makeasync.js")
+client.add_route("default.css","client/default.css")
 client.add_route("setup","client/setup.html")
 client.add_route("ajax-loader.gif","client/ajax-loader.gif")
 client.add_route("login","client/login.html")
+client.add_route("dash","client/dashboard.html")
 
 client.start()
