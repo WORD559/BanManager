@@ -1,8 +1,9 @@
 <html>
 <!--
-My intention for this page is for it to sort of be a dashboard.
-I want to try and keep that on the index page for bookmarks and whatnot.
-This can probably be accomplished with a hidden iframe if the need arises, but there's probably no need.
+This is more or less just a gateway into the rest of the client
+If the system has not been set up, it will redirect to the setup page
+If the user is not logged in, it will redirect to the login page
+Otherwise, it will redirect to the dashboard
 -->
 <head>
 <script type="text/javascript" src="makeasync.js"></script>
@@ -15,14 +16,7 @@ function status_callback(data) {
     if (!(response["data"]["logged_in"])) {
         window.location = "/login"; // If not already logged in, go to the login page
     }
-    setup_dash(response);
-}
-function setup_dash(status) {
-    // Remove the ajax loader
-    var loader = document.getElementById("ajax-loader");
-    loader.parentNode.removeChild(loader);
-    console.log(status);
-    
+    window.location = "/dash"; // If all is good, go to the dash
 }
 MakeAsyncRequest("GET","/api/v1/status",status_callback);
 </script>
