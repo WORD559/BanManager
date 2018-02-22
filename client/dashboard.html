@@ -1,0 +1,103 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script>
+function check_logged_in(data) { 
+    var response = JSON.parse(data);
+    if (!(response["data"]["logged_in"])) {
+        window.location = "/login";
+    } else {
+        document.getElementById("username").innerHTML = response["data"]["user"];
+    }
+    get_current_sanctions();
+}
+function get_current_sanctions() {
+    // we need the current date so we can get everyone who's banned until after today
+    var today = new Date();
+    var yesterday = new Date(today);
+    yesterday.setDate(today.getDate()-1);
+    var day = yesterday.getDate();
+    var month = yesterday.getMonth() + 1;
+    var year = yesterday.getFullYear();
+    if (day < 10) {
+        day = "0" + day;
+    }
+    if (month < 10) {
+        month = "0" + month;
+    }
+    var yyyymmdd = year+"-"+month+"-"+day;
+    MakeAsyncRequest("GET","/api/v1/query_sanction",get_incidents);
+}
+function get_incidents(data) {
+    var response = JSON.parse(data);
+    // we need to get all the incident IDs from the sanctions
+    var incidents = response["data"].map(function (i) { return i["IncidentID"]; } );
+    sanctions = response["data"].map(function (i) { return i["Sanction"]; });
+    var to_send = {id:incidents.join(" ")};
+    MakeAsyncRequest("GET","/api/v1/query_incident?"+encodeFormData(to_send),get_usernames);
+}
+function get_usernames(data) {
+    var sanctioned = document.getElementById("current_sanctions");
+    var response = JSON.parse(data);
+    var usernames = [];
+    var sanction_count = [];
+    for (var i = 0;i < response["data"].length;i++) {
+        var item = response["data"][i];
+        if (usernames.indexOf(item["Username"]) == -1) {
+            usernames.push(item["Username"]);
+            sanction_count.push(1);
+            
+            var user_div = document.createElement("div");
+            user_div.setAttribute("class","sanctioned");
+            
+            var user_pic = document.createElement("img");
+            user_pic.src = "/api/v1/photo?user="+encodeURIComponent(item["Username"]);
+            user_pic.setAttribute("class","sanctioned");
+            
+            var user_p = document.createElement("p");
+            user_p.setAttribute("class","sanctioned");
+            user_p.innerHTML = item["Username"];
+            var sanction = sanctions[i];
+            var max_length = 45
+            if (sanction.length > max_length) {
+                user_p.innerHTML = item["Username"]+"<br>Sanction: "+sanction.substring(0,max_length)+"...";
+            } else {
+                user_p.innerHTML = item["Username"]+"<br>Sanction: "+sanction;
+            }
+            user_p.id = item["Username"]+"_p";
+            
+            user_div.appendChild(user_pic);
+            user_div.appendChild(user_p);
+            sanctioned.appendChild(user_div);
+        } else {
+            sanction_count[usernames.indexOf(item["Username"])] += 1;
+        }
+    }
+    for (var i=0;i < usernames.length;i++) {
+        if (sanction_count[i] > 1) {
+            document.getElementById(usernames[i]+"_p").innerHTML += "<br>and "+(sanction_count[i]-1)+" other(s)";
+        }
+    }
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+var sanctions;
+MakeAsyncRequest("GET","/api/v1/status",check_logged_in);
+</script>
+</head>
+<body>
+
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<div class="account-widget">
+<p>Welcome, <span class="username" id="username">username</span>!</p>
+</div>
+<p style="text-align:center">Currently sanctioned students</p>
+<div class="banned-dashboard">
+<div class="sanctioned-grid-container" style="grid-template-columns:auto auto auto auto; width:100%" id="current_sanctions">
+</div>
+</div>
+
+</body>
+</html>

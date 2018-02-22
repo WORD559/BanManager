@@ -1,0 +1,34 @@
+span.username {
+    font-weight: bold;
+}
+.sanctioned-grid-container {
+    display: inline-grid;
+    overflow-y: auto;
+    height:100%;
+    /*border: solid 1px black;
+    border-collapse: collapse;*/
+}
+div.sanctioned {
+    border:none;
+    position: relative;
+}
+img.sanctioned {
+    width: auto;
+    height: auto;
+    max-height: 200px;
+    max-width: 200px;
+    display: block;
+    margin: 0 auto;
+}
+p.sanctioned {
+    position: block;
+    bottom: 0px;
+    text-align: center;
+}
+.account-widget {
+    border: solid 1px black;
+    height: 10%;
+}
+.banned-dashboard {
+    height: 80%;
+}
