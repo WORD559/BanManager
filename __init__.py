@@ -611,7 +611,7 @@ def sanction_query(request):
     Filter = {}
     try:
         if request.args.has_key("incident"):
-            Filter["incident"] = int(request.args["incident"]).split(" ")
+            Filter["incident"] = [int(i) for i in str(request.args["incident"]).split(" ")]
         if request.args.has_key("starts_before"):
             Filter["starts_before"] = str(request.args["starts_before"])
         if request.args.has_key("starts_after"):
@@ -621,7 +621,7 @@ def sanction_query(request):
         if request.args.has_key("ends_after"):
             Filter["ends_after"] = str(request.args["ends_after"])
         if request.args.has_key("id"):
-            Filter["id"] = str(request.args["id"]).split(" ")
+            Filter["id"] = [int(i) for i in str(request.args["id"]).split(" ")]
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     

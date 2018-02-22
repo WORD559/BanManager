@@ -105,7 +105,7 @@ def get_private_key(request):
         rsa = RSA.importKey(data)
         cur.close()
         db.close()
-    except ValueError:
+    except (ValueError,TypeError):
         cur.close()
         db.close()
         raise AuthenticationError
