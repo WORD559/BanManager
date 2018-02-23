@@ -1,4 +1,4 @@
-function check_logged_in(f) { 
+function check_logged_in(f,fetch_incidents=true) { 
     function login_callback(data) {
         var response = JSON.parse(data);
         if (!(response["data"]["logged_in"])) {
@@ -6,7 +6,9 @@ function check_logged_in(f) {
         } else {
             document.getElementById("username").innerHTML = response["data"]["user"];
         }
-        get_unresolved_incidents_count(document.getElementById("incidents"));
+        if (fetch_incidents) {
+            get_unresolved_incidents_count(document.getElementById("incidents"));
+        }
         f();
     }
     MakeAsyncRequest("GET","/api/v1/status",login_callback);
