@@ -34,8 +34,14 @@ function get_incidents(data) {
     // we need to get all the incident IDs from the sanctions
     var incidents = response["data"].map(function (i) { return i["IncidentID"]; } );
     sanctions = response["data"].map(function (i) { return i["Sanction"]; });
-    var to_send = {id:incidents.join(" ")};
-    MakeAsyncRequest("GET","/api/v1/query_incident?"+encodeFormData(to_send),get_usernames);
+    if (incidents.length > 0) {
+        var to_send = {id:incidents.join(" ")};
+        MakeAsyncRequest("GET","/api/v1/query_incident?"+encodeFormData(to_send),get_usernames);
+    } else {
+        document.getElementById("current_sanctions").innerHTML = "No sanctions!";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
+    }
 }
 function get_usernames(data) {
     var sanctioned = document.getElementById("current_sanctions");
