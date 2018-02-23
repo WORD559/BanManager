@@ -7,6 +7,10 @@
 // Because everything is async, we need to have these accessible to the whole function chain
 var incidents;
 var sanctions;
+// function that check_logged_in hands over to
+function get_incidents() {
+    MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);
+}
 // Our first callback. Saves the incidents and gets the sanctions.
 function get_sanctions(data) {
     var response = JSON.parse(data);
@@ -125,7 +129,7 @@ function delete_incident(ID,row,unresolved=false) {
     // ...and send it to /modify_incident
     MakeAsyncRequest("POST","/api/v1/modify_incident",callback,data,"application/x-www-form-urlencoded");
 }
-MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);
+check_logged_in(get_incidents);
 </script>
 </head>
 
