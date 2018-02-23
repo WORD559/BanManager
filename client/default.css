@@ -37,6 +37,8 @@ p.sanctioned {
 }
 .account-widget td {
     height:100%;
+    padding-right:4px;
+    padding-left:4px;
 }
 .account-widget td:hover {
     background-color: #F0F0F0;
@@ -46,4 +48,21 @@ p.sanctioned {
 }
 .banned-dashboard {
     height: 80%;
+}
+.incidents {
+    width:100%;
+}
+.incidents td{
+    max-width:100%;
+    white-space: nowrap;
+}
+.bordered-table {
+    border-collapse: collapse;
+}
+.bordered-table td, th {
+    border: solid 1px black;
+    border-collapse: collapse;
+}
+td.long-column {
+    white-space: initial;
 }

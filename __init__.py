@@ -1189,5 +1189,6 @@ client.add_route("banman.js","client/banman.js")
 client.add_route("menubar.js","client/menubar.js")
 client.add_route("dash","client/dashboard.html")
 client.add_route("logout","client/logout.html")
+client.add_route("incidents","client/incidents.html")
 
 client.start()

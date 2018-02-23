@@ -1,0 +1,43 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="/menubar.js"></script>
+
+<p>All incidents</p>
+<table class="bordered-table incidents" id="item_table">
+<tr>
+<th>ID</th>
+<th>Username</th>
+<th>Date</th>
+<th>Report</th>
+</tr>
+<script>
+function sort_and_render(data) {
+    var response = JSON.parse(data);
+    var incidents = response["data"].sort(function (i) { return new Date(i["Date"]); });
+    var table = document.getElementById("item_table");
+    for (var i=0;i < incidents.length;i++) {
+        var row = table.insertRow(-1);
+        var ID = row.insertCell(0);
+        var username = row.insertCell(1);
+        var date = row.insertCell(2);
+        var report = row.insertCell(3);
+        ID.innerHTML = "<p>"+incidents[i]["ID"]+"</p>";
+        username.innerHTML = "<p>"+incidents[i]["Username"]+"</p>";
+        date.innerHTML = "<p>"+incidents[i]["Date"]+"</p>";
+        report.innerHTML = "<p>"+incidents[i]["Report"]+"</p>";
+        report.setAttribute("class","long-column");
+    }
+}
+MakeAsyncRequest("GET","/api/v1/query_incident",sort_and_render);
+</script>
+</table>
+</body>
+</html>
