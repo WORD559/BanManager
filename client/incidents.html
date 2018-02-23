@@ -3,12 +3,149 @@
 <link rel="stylesheet" type="text/css" href="default.css">
 <script type="text/javascript" src="/makeasync.js"></script>
 <script type="text/javascript" src="/banman.js"></script>
+<script>
+// Because everything is async, we need to have these accessible to the whole function chain
+var incidents;
+var sanctions;
+// Our first callback. Saves the incidents and gets the sanctions.
+function get_sanctions(data) {
+    var response = JSON.parse(data);
+    incidents = response["data"].sort(function (i) { return new Date(i["Date"]); });
+    MakeAsyncRequest("GET","/api/v1/query_sanction",sort_and_render);
+}
+// Second callback. Saves the incidents and then generates a table with all of the information displayed
+function sort_and_render(data) {
+    // This function creates a new row in the table (1st arg), with a unique ID specified by when it was entered into the table (counter) and whether it is in the unsanctioned table or not (sanction_table). (sanction) is the index of the sanction in the sanctions variable, NOT the actual sanction. If this is -1, it's unsanctioned, and our delete button has to tell this to the delete function.
+    function set_basics(table,incident,sanction,counter,sanction_table=false) {
+        // append to end of table
+        var row = table.insertRow(-1);
+        if (sanction_table) {
+            // If it's the unsanctioned table, it needs a different ID
+            row.id = "incident_unsanc_"+counter;
+        } else {
+            row.id = "incident_"+counter;
+        }
+        // Make the cells on the new row
+        var ID = row.insertCell(0);
+        var username = row.insertCell(1);
+        var date = row.insertCell(2);
+        var report = row.insertCell(3);
+        var delete_button = row.insertCell(4);
+        ID.innerHTML = "<p>"+incident["ID"]+"</p>";
+        username.innerHTML = "<p>"+incident["Username"]+"</p>";
+        date.innerHTML = "<p>"+incident["Date"]+"</p>";
+        report.innerHTML = "<p>"+incident["Report"]+"</p>";
+        report.setAttribute("class","long-column");
+        // If unsanctioned (sanction == -1) then our button needs to reflect that.
+        // Lets say:
+        // counter = 5
+        // incident["ID"] = 14
+        // sanction = -1
+        // The button, onclick, produces: delete_incident(14,"incident_5",true);
+        // This tells the delete function to request the API deletes incident 14 and remove the rows with ids "incident_5" and "incident_unsanc_5"
+        if (sanction != -1) {
+            delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\"); return false;'>Delete</button>";
+        } else {
+            delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\",true); return false;'>Delete</button>";
+        }
+        // return the row so we can do more with it in a bit
+        return row;
+    }
+    var response = JSON.parse(data);
+    sanctions = response["data"];
+    // Get an array of incident IDs where the indexs match that of the sanctions array
+    // This allows us to find a sanction object in `sanctions` using sanction_ids.indexOf
+    var sanction_ids = sanctions.map(function (i) {return i["IncidentID"];});
+    
+    // Get our two tables
+    var table = document.getElementById("item_table");
+    var unsanctioned = document.getElementById("unsanctioned_table");
+    
+    // Iterate through the incidents
+    for (var i=0;i < incidents.length;i++) {
+        // get the sanction for this incident
+        var sanction = sanction_ids.indexOf(incidents[i]["ID"]);
+        
+        // add the row to the table
+        var row = set_basics(table,incidents[i],sanction,i);
+        
+        // make a new row for our sanction text
+        var sanction_text = row.insertCell(4);
+        
+        // If there is actually a sanction...
+        if (sanction != -1) {
+            // add it
+            sanction_text.innerHTML = "<p>"+sanctions[sanction]["Sanction"]+"</p>";
+            sanction_text.setAttribute("class","long-column");
+        } else {
+            // otherwise, add it to the unsanctioned table with an _unsanc id
+            set_basics(unsanctioned,incidents[i],sanction,i,true);
+        }
+    }
+    
+    // If there's nothing new in the unsanctioned table, remove it
+    if (unsanctioned.rows.length == 1) {
+        var top_span = document.getElementById("top_span");
+        top_span.parentNode.removeChild(top_span);
+    }
+    // remove the ajax loader
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+function delete_incident(ID,row,unresolved=false) {
+    // our callback function for the delete request
+    function callback(data) {
+        var response = JSON.parse(data);
+        // if it succeeded...
+        if (response["status"] == "OK") {
+            // strip out the "unsanc_" part of the ID, if it is present
+            var sanitised_row = row.replace("unsanc_","");
+            // remove the regular row
+            var selected_row = document.getElementById(sanitised_row);
+            selected_row.parentNode.removeChild(selected_row);
+            
+            // if it's an unresolved incident...
+            if (unresolved) {
+                // get and remove the row with the "_unsanc_" ID
+                selected_row = document.getElementById(sanitised_row.slice(0,8)+"_unsanc"+sanitised_row.slice(8));
+                selected_row.parentNode.removeChild(selected_row);
+                
+                // Check to see if the unsanctioned table is empty again
+                var unsanctioned = document.getElementById("unsanctioned_table");
+                if (unsanctioned.rows.length == 1) {
+                    var top_span = document.getElementById("top_span");
+                    top_span.parentNode.removeChild(top_span);
+                }
+            }
+        }
+    }
+    
+    // Encode the deletion POST data
+    var data = encodeFormData({delete:true,id:ID});
+    // ...and send it to /modify_incident
+    MakeAsyncRequest("POST","/api/v1/modify_incident",callback,data,"application/x-www-form-urlencoded");
+}
+MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);
+</script>
 </head>
 
 <body>
 <img id="ajax-loader" src="/ajax-loader.gif"/>
 
 <script type="text/javascript" src="/menubar.js"></script>
+
+<span id="top_span">
+<p>Unresolved Incidents</p>
+<table class="bordered-table incidents" id="unsanctioned_table">
+<tr>
+<th>ID</th>
+<th>Username</th>
+<th>Date</th>
+<th>Report</th>
+<th>Delete</th>
+</tr>
+</table>
+</span>
 
 <p>All incidents</p>
 <table class="bordered-table incidents" id="item_table">
@@ -17,27 +154,9 @@
 <th>Username</th>
 <th>Date</th>
 <th>Report</th>
+<th>Sanction</th>
+<th>Delete</th>
 </tr>
-<script>
-function sort_and_render(data) {
-    var response = JSON.parse(data);
-    var incidents = response["data"].sort(function (i) { return new Date(i["Date"]); });
-    var table = document.getElementById("item_table");
-    for (var i=0;i < incidents.length;i++) {
-        var row = table.insertRow(-1);
-        var ID = row.insertCell(0);
-        var username = row.insertCell(1);
-        var date = row.insertCell(2);
-        var report = row.insertCell(3);
-        ID.innerHTML = "<p>"+incidents[i]["ID"]+"</p>";
-        username.innerHTML = "<p>"+incidents[i]["Username"]+"</p>";
-        date.innerHTML = "<p>"+incidents[i]["Date"]+"</p>";
-        report.innerHTML = "<p>"+incidents[i]["Report"]+"</p>";
-        report.setAttribute("class","long-column");
-    }
-}
-MakeAsyncRequest("GET","/api/v1/query_incident",sort_and_render);
-</script>
 </table>
 </body>
 </html>
