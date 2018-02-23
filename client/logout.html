@@ -1,0 +1,16 @@
+<html>
+<head>
+<script type="text/javascript" src="/makeasync.js"></script>
+<script>
+function handle_logout(data) {
+    var response = JSON.parse(data);
+    if (response["data"] == "Logged out!") {
+        window.location = "/login";
+    }
+}
+MakeAsyncRequest("POST","/api/v1/logout",handle_logout);
+</script>
+</head>
+<body>
+<img src="/ajax-loader.gif"/>
+</body>

@@ -1167,6 +1167,10 @@ def get_photo(request):
     im = decrypt_image(photokey,path,stringio=True)
 
     return send_file(im,mimetype="image/jpeg")
+
+@api.route("logout",["POST"])
+def log_user_out(request):
+    return logout(app)
     
 api.start("/api/v1")
 
@@ -1183,5 +1187,6 @@ client.add_route("ajax-loader.gif","client/ajax-loader.gif")
 client.add_route("login","client/login.html")
 client.add_route("banman.js","client/banman.js")
 client.add_route("dash","client/dashboard.html")
+client.add_route("logout","client/logout.html")
 
 client.start()
