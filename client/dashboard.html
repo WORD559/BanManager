@@ -17,11 +17,9 @@ function check_logged_in(data) {
 function get_current_sanctions() {
     // we need the current date so we can get everyone who's banned until after today
     var today = new Date();
-    var yesterday = new Date(today);
-    yesterday.setDate(today.getDate()-1);
-    var day = yesterday.getDate();
-    var month = yesterday.getMonth() + 1;
-    var year = yesterday.getFullYear();
+    var day = today.getDate();
+    var month = today.getMonth() + 1;
+    var year = today.getFullYear();
     if (day < 10) {
         day = "0" + day;
     }
@@ -94,8 +92,8 @@ MakeAsyncRequest("GET","/api/v1/status",check_logged_in);
 
 <table class="account-widget">
 <tr>
-<td><p>Welcome, <span class="highlighted-var username" id="username">username</span>!</p></td>
-<td><p>Incidents (<span class="highlighted-var" id="incidents">0</span> Unresolved)</p></td>
+<td style="border-right:solid 1px black">Welcome, <span class="highlighted-var username" id="username">username</span>!<br><a href="/logout">Logout</a></td>
+<td><a href="/incidents">Incidents (<span class="highlighted-var" id="incidents">0</span> Unresolved)</a></td>
 </tr>
 </table>
 <p style="text-align:center">Currently sanctioned students</p>

@@ -27,7 +27,7 @@ p.sanctioned {
 }
 .account-widget {
     border: solid 1px black;
-    height: 10%;
+    height: 5%;
     width: 100%;
     table-layout: fixed;
 }
@@ -40,6 +40,9 @@ p.sanctioned {
 }
 .account-widget td:hover {
     background-color: #F0F0F0;
+}
+.account-widget td, a {
+    display:block;
 }
 .banned-dashboard {
     height: 80%;
