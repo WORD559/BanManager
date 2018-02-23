@@ -1,11 +1,17 @@
-function MakeAsyncRequest(method,url,callback,data=null,content_type="application/json") {
+function MakeAsyncRequest(method,url,callback,data=null,content_type="application/json",cache=true) {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (xhttp.readyState == 4 && xhttp.status == 200) {
             callback(xhttp.responseText);
         }
     };
-    //console.log(data);
+    // Just in case we need to force it not to cache. We basically just use a timestamp so it appears different.
+    if (cache == false) {
+    if (data == null) {
+        data = {"_":(new Date()).getTime()};
+    } else {
+        data["_"] = (new Date()).getTime();
+    }}
     xhttp.open(method,url,true);
     xhttp.setRequestHeader("Content-type",content_type);
     xhttp.send(data);
