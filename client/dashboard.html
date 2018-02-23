@@ -4,16 +4,6 @@
 <script type="text/javascript" src="/makeasync.js"></script>
 <script type="text/javascript" src="/banman.js"></script>
 <script>
-function check_logged_in(data) { 
-    var response = JSON.parse(data);
-    if (!(response["data"]["logged_in"])) {
-        window.location = "/login";
-    } else {
-        document.getElementById("username").innerHTML = response["data"]["user"];
-    }
-    get_unresolved_incidents_count(document.getElementById("incidents"));
-    get_current_sanctions();
-}
 function get_current_sanctions() {
     // we need the current date so we can get everyone who's banned until after today
     var today = new Date();
@@ -89,7 +79,7 @@ function get_usernames(data) {
     loader.parentNode.removeChild(loader);
 }
 var sanctions;
-MakeAsyncRequest("GET","/api/v1/status",check_logged_in);
+check_logged_in(get_current_sanctions);
 </script>
 </head>
 <body>

@@ -1,3 +1,17 @@
+function check_logged_in(f) { 
+    function login_callback(data) {
+        var response = JSON.parse(data);
+        if (!(response["data"]["logged_in"])) {
+            window.location = "/login";
+        } else {
+            document.getElementById("username").innerHTML = response["data"]["user"];
+        }
+        get_unresolved_incidents_count(document.getElementById("incidents"));
+        f();
+    }
+    MakeAsyncRequest("GET","/api/v1/status",login_callback);
+}
+
 function get_unresolved_incidents_count(value_node) {
     var num_incidents;
     var num_sanctions;
