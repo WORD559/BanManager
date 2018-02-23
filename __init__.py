@@ -1180,6 +1180,7 @@ api.start("/api/v1")
 client = apiframework.Client(app)
 
 client.add_route("index.html","client/index.html")
+client.add_route("favicon.ico","client/favicon.ico")
 client.add_route("makeasync.js","client/makeasync.js")
 client.add_route("default.css","client/default.css")
 client.add_route("setup","client/setup.html")

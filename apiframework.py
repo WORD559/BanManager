@@ -24,7 +24,6 @@ class API(object):
         self.functions = {} # define an empty dictionary.
         # Requests received will be looked up in this dictionary to find the
         # appropriate function
-        self.favicon = None
 
     def start(self,route="/api"):
         # The base Flask route is set up. All requests will come through this route.
@@ -66,14 +65,6 @@ class API(object):
                     return send_from_directory(self.app.root_path,"user.jpg",
                                                mimetype="image/jpeg")
 
-        @self.app.route("/favicon.ico")
-        def return_favicon():
-            if self.favicon != None:
-                return send_from_directory(self.favicon[0],self.favicon[1],
-                                           mimetype="image/vnd.microsoft.icon")
-            else:
-                return Response(status=404)
-
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):
         def decorator(function):
@@ -82,13 +73,6 @@ class API(object):
             self.functions[name] = (function,methods)
             return wrapper()
         return decorator
-
-    # Function for properly setting the favicon
-    def set_favicon(self,path):
-        if "/" not in path and "\\" not in path:
-            self.favicon = (self.app.root_path,path)
-        else:
-            self.favicon = (os.path.dirname(path),os.path.basename(path))
             
 class Client(object):
     def __init__(self,app):
