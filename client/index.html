@@ -12,11 +12,11 @@ function status_callback(data) {
     var response = JSON.parse(data);
     if (!(response["data"]["initialised"])) {
         window.location = "/setup"; // If not already initialised, go to the setup page
-    }
-    if (!(response["data"]["logged_in"])) {
+    } else if (!(response["data"]["logged_in"])) {
         window.location = "/login"; // If not already logged in, go to the login page
-    }
+    } else {
     window.location = "/dash"; // If all is good, go to the dash
+    }
 }
 MakeAsyncRequest("GET","/api/v1/status",status_callback);
 </script>
