@@ -1,4 +1,4 @@
-span.username {
+.highlighted-var {
     font-weight: bold;
 }
 .sanctioned-grid-container {
@@ -28,6 +28,18 @@ p.sanctioned {
 .account-widget {
     border: solid 1px black;
     height: 10%;
+    width: 100%;
+    table-layout: fixed;
+}
+.account-widget tr {
+    height:100%;
+    display:flex;
+}
+.account-widget td {
+    height:100%;
+}
+.account-widget td:hover {
+    background-color: #F0F0F0;
 }
 .banned-dashboard {
     height: 80%;

@@ -2,6 +2,7 @@
 <head>
 <link rel="stylesheet" type="text/css" href="default.css">
 <script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
 <script>
 function check_logged_in(data) { 
     var response = JSON.parse(data);
@@ -10,6 +11,7 @@ function check_logged_in(data) {
     } else {
         document.getElementById("username").innerHTML = response["data"]["user"];
     }
+    get_unresolved_incidents_count(document.getElementById("incidents"));
     get_current_sanctions();
 }
 function get_current_sanctions() {
@@ -27,7 +29,7 @@ function get_current_sanctions() {
         month = "0" + month;
     }
     var yyyymmdd = year+"-"+month+"-"+day;
-    MakeAsyncRequest("GET","/api/v1/query_sanction",get_incidents);
+    MakeAsyncRequest("GET","/api/v1/query_sanction?ends_after="+yyyymmdd,get_incidents);
 }
 function get_incidents(data) {
     var response = JSON.parse(data);
@@ -90,9 +92,12 @@ MakeAsyncRequest("GET","/api/v1/status",check_logged_in);
 
 <img id="ajax-loader" src="/ajax-loader.gif"/>
 
-<div class="account-widget">
-<p>Welcome, <span class="username" id="username">username</span>!</p>
-</div>
+<table class="account-widget">
+<tr>
+<td><p>Welcome, <span class="highlighted-var username" id="username">username</span>!</p></td>
+<td><p>Incidents (<span class="highlighted-var" id="incidents">0</span> Unresolved)</p></td>
+</tr>
+</table>
 <p style="text-align:center">Currently sanctioned students</p>
 <div class="banned-dashboard">
 <div class="sanctioned-grid-container" style="grid-template-columns:auto auto auto auto; width:100%" id="current_sanctions">
