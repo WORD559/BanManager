@@ -90,12 +90,8 @@ MakeAsyncRequest("GET","/api/v1/status",check_logged_in);
 
 <img id="ajax-loader" src="/ajax-loader.gif"/>
 
-<table class="account-widget">
-<tr>
-<td style="border-right:solid 1px black">Welcome, <span class="highlighted-var username" id="username">username</span>!<br><a href="/logout">Logout</a></td>
-<td><a href="/incidents">Incidents (<span class="highlighted-var" id="incidents">0</span> Unresolved)</a></td>
-</tr>
-</table>
+<script type="text/javascript" src="/menubar.js"></script>
+
 <p style="text-align:center">Currently sanctioned students</p>
 <div class="banned-dashboard">
 <div class="sanctioned-grid-container" style="grid-template-columns:auto auto auto auto; width:100%" id="current_sanctions">

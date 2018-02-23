@@ -1186,6 +1186,7 @@ client.add_route("setup","client/setup.html")
 client.add_route("ajax-loader.gif","client/ajax-loader.gif")
 client.add_route("login","client/login.html")
 client.add_route("banman.js","client/banman.js")
+client.add_route("menubar.js","client/menubar.js")
 client.add_route("dash","client/dashboard.html")
 client.add_route("logout","client/logout.html")
 
