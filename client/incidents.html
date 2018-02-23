@@ -86,6 +86,8 @@ function sort_and_render(data) {
             set_basics(unsanctioned,incidents[i],sanction,i,true);
         }
     }
+    // set the unresolved counter
+    document.getElementById("incidents").innerHTML = (unsanctioned.rows.length - 1);
     
     // If there's nothing new in the unsanctioned table, remove it
     if (unsanctioned.rows.length == 1) {
@@ -114,6 +116,9 @@ function delete_incident(ID,row,unresolved=false) {
                 selected_row = document.getElementById(sanitised_row.slice(0,8)+"_unsanc"+sanitised_row.slice(8));
                 selected_row.parentNode.removeChild(selected_row);
                 
+                // set the unresolved counter
+                document.getElementById("incidents").innerHTML = (document.getElementById("unsanctioned_table").rows.length - 1);
+                
                 // Check to see if the unsanctioned table is empty again
                 var unsanctioned = document.getElementById("unsanctioned_table");
                 if (unsanctioned.rows.length == 1) {
@@ -129,7 +134,7 @@ function delete_incident(ID,row,unresolved=false) {
     // ...and send it to /modify_incident
     MakeAsyncRequest("POST","/api/v1/modify_incident",callback,data,"application/x-www-form-urlencoded");
 }
-check_logged_in(get_incidents);
+check_logged_in(get_incidents,false);
 </script>
 </head>
 
