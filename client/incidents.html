@@ -38,7 +38,7 @@ function sort_and_render(data) {
         var date = row.insertCell(2);
         var report = row.insertCell(3);
         var delete_button = row.insertCell(4);
-        ID.innerHTML = "<a name=\""+incident["ID"]+"\"></a><p>"+incident["ID"]+"</p>";
+        ID.innerHTML = "<a name=\""+incident["ID"]+"\"></a><a href=\"/view_incident?id="+incident["ID"]+"\">"+incident["ID"]+"</a>";
         username.innerHTML = "<p>"+incident["Username"]+"</p>";
         date.innerHTML = "<p>"+incident["Date"]+"</p>";
         report.innerHTML = "<p>"+incident["Report"]+"</p>";

@@ -1191,5 +1191,6 @@ client.add_route("menubar.js","client/menubar.js")
 client.add_route("dash","client/dashboard.html")
 client.add_route("logout","client/logout.html")
 client.add_route("incidents","client/incidents.html")
+client.add_route("view_incident","client/view_incident.html")
 
 client.start()

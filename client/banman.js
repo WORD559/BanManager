@@ -29,3 +29,30 @@ function get_unresolved_incidents_count(value_node) {
     }
     MakeAsyncRequest("GET","/api/v1/query_incident",count_incidents);
 }
+
+function getURLParams(url) {
+    var start = url.indexOf("?") + 1;
+    var end = url.indexOf("#");
+    if (end == -1) {
+        end = url.length;
+    }
+    var raw = url.substring(start,end);
+    var args = raw.replace(/\+/g, " ").split("&");
+    var params = {};
+    
+    if (raw === url || raw === "" || start == 0) {
+        return params;
+    }
+    
+    for (var i=0;i < args.length; i++) {
+        var argpair = args[i].split("=");
+        var arg = decodeURIComponent(argpair[0]);
+        var val = decodeURIComponent(argpair[1]);
+        if (!params.hasOwnProperty(arg)) { // Allows the same argument twice
+            params[arg] = [];
+        }
+        params[arg].push(val);
+    }
+    
+    return params;
+}

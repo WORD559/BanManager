@@ -1,0 +1,169 @@
+<html>
+<head>
+<title>Incident|BanManager</title>
+<link rel="icon" href="banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+var incidents;
+var sanctions;
+var incident;
+var sanction;
+var students;
+function get_incidents(data) {
+    var response = JSON.parse(data);
+    incidents = response["data"];
+    var params = getURLParams(window.location.href);
+    if (!params.hasOwnProperty("id")) {
+        document.getElementById("incident_info").innerHTML = "Incident does not exist!";
+        return;
+    }
+    incident = params["id"];
+    document.title = "Incident "+incident+"|BanManager";
+    incident = incidents.filter(function (i) {return (i["ID"] == incident);})[0];
+    console.log(incident);
+    if (incident != undefined) {
+        MakeAsyncRequest("GET","/api/v1/query_sanction",get_sanctions);
+    } else {
+        document.getElementById("incident_info").innerHTML = "Incident does not exist!";
+    }
+}
+function get_sanctions(data) {
+    var response = JSON.parse(data);
+    sanctions = response["data"];
+    sanction = sanctions.filter(function (i) {return (i["IncidentID"] == incident["ID"])})[0];
+    // We may need usernames in order to populate a select field
+    MakeAsyncRequest("GET","/api/v1/query_student",get_students);
+}
+function get_students(data) {
+    var response = JSON.parse(data);
+    students = response["data"];
+    render();
+}
+function render() {
+    var output = document.getElementById("incident_info");
+    output.innerHTML += "<p>Incident "+incident["ID"]+"</p>";
+    var table = document.createElement("table");
+    table.setAttribute("class","long-table horizontal-table");
+    
+    // Add the username
+    var user = table.insertRow(-1);
+    user.insertCell(0).innerHTML = "Username:";
+    var cell = user.insertCell(1);
+    cell.innerHTML = incident["Username"];
+    cell.id = "new_user";
+    user.insertCell(2).innerHTML = "<button id=\"new_user_button\" onclick=\"edit('new_user','select'); return false;\">Edit</button>";
+    
+    // Add the date of the incident
+    var date = table.insertRow(-1);
+    date.insertCell(0).innerHTML = "Date:";
+    cell = date.insertCell(1);
+    cell.innerHTML = incident["Date"];
+    cell.id = "date";
+    date.insertCell(2).innerHTML = " <button id=\"date_button\" onclick=\"edit('date','input','date'); return false;\">Edit</button>";
+    
+    // Report
+    var report = table.insertRow(-1);
+    report.insertCell(0).innerHTML = "Report:";
+    cell = report.insertCell(1)
+    cell.innerHTML = incident["Report"];
+    cell.setAttribute("class","long-column");
+    cell.id = "report";
+    report.insertCell(2).innerHTML = "<button id=\"report_button\" onclick=\"edit('report'); return false;\">Edit</button>";
+    
+    output.appendChild(table);
+    
+    // Now we do the sanction info
+    output = document.getElementById("sanction_info");
+    if (sanction == undefined) {
+        output.innerHTML = "No sanction has been given. <button onclick=\"make_new_sanction()\" id=\"make_sanction\">Add sanction</button>";
+        return;
+    }
+    table = document.createElement("table");
+    table.setAttribute("class","long-table horizontal-table");
+    
+    // Add the start and end date
+    var start = table.insertRow(-1);
+    start.insertCell(0).innerHTML = "Start Date:";
+    cell = start.insertCell(1);
+    cell.innerHTML = sanction["StartDate"];
+    cell.id = "start_date";
+    start.insertCell(2).innerHTML = "<button id=\"start_date_button\" onclick=\"edit('start_date','input','date'); return false;\">Edit</button>"
+    var end = table.insertRow(-1);
+    end.insertCell(0).innerHTML = "End Date:";
+    cell = end.insertCell(1);
+    cell.innerHTML = sanction["EndDate"];
+    cell.id = "end_date";
+    end.insertCell(2).innerHTML = "<button id=\"end_date_button\" onclick=\"edit('end_date','input','date'); return false;\">Edit</button>";
+    
+    // Add the sanction
+    var punishment = table.insertRow(-1);
+    punishment.insertCell(0).innerHTML = "Sanction:";
+    cell = punishment.insertCell(1);
+    cell.innerHTML = sanction["Sanction"];
+    cell.setAttribute("class","long-column");
+    cell.id = "sanction";
+    punishment.insertCell(2).innerHTML = "<button id=\"sanction_button\" onclick=\"edit('sanction'); return false;\">Edit</button>";
+    
+    output.appendChild(table);
+}
+function edit(field,element="textarea",type="") {
+    var node = document.getElementById(field);
+    var input = document.createElement(element);
+    input.value = node.innerHTML;
+    input.id = (field+"_input");
+    input.type = type;
+    if (element == "select") { 
+        for (var i=0;i < students.length;i++) {
+            var option = document.createElement("option");
+            option.value = students[i]["Username"];
+            option.innerHTML = students[i]["Username"];
+            input.appendChild(option);
+        }
+    }
+    node.innerHTML = "";
+    node.appendChild(input);
+    
+    // Now we need to change the edit button into a submit button
+    var button = document.getElementById(field+"_button");
+    button.innerHTML = "Submit";
+    button.onclick = function () {submit_change(field,element,type); return false;}
+}
+function submit_change(field,element,type) {
+    var data = {};
+    var input = document.getElementById(field+"_input");
+    var change_type = 0;
+    data[field] = input.value;
+    if (field == "new_user" || field == "date" || field == "report") {
+        change_type = 1;
+    } else {
+        change_type = 2;
+    }
+    if (change_type == 1) {
+        data["id"] = incident["ID"];
+        MakeAsyncRequest("POST","/api/v1/modify_incident",function () { location.reload(); },encodeFormData(data),"application/x-www-form-urlencoded");
+    } else if (change_type == 2) {
+        data["id"] = sanction["ID"];
+        MakeAsyncRequest("POST","/api/v1/modify_sanction",function () { location.reload(); },encodeFormData(data),"application/x-www-form-urlencoded");
+    }
+    
+    var button = document.getElementById(field+"_button");
+    button.innerHTML = "Edit";
+    button.onclick = function () {edit(field,element,type); return false;};
+}
+check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_incidents)});
+</script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="menubar.js"></script>
+
+<div id="incident_info"></div>
+<br>
+<div id="sanction_info"></div>
+</body>
+</html>

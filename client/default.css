@@ -63,6 +63,12 @@ p.sanctioned {
     border: solid 1px black;
     border-collapse: collapse;
 }
+.horizontal-table tr {
+    display:flex;
+}
+.long-table {
+    width:100%;
+}
 td.long-column {
     white-space: initial;
 }
