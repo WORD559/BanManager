@@ -37,6 +37,10 @@ class API(object):
             else:
                 try:
                     if request.method in self.functions[f][1]:
+                        # We want to remove any "dud" arguments
+                        request.args = dict([i for i in request.args.items() if (i[0] != "") and (i[1] != "")])
+                        request.form = dict([i for i in request.form.items() if (i[0] != "") and (i[1] != "")])
+                        
                         if self.functions[f][0].func_code.co_argcount == 1:
                             return self.functions[f][0](request)
                         elif self.functions[f][0].func_code.co_argcount == 0:
