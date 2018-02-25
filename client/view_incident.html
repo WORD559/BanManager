@@ -23,7 +23,6 @@ function get_incidents(data) {
     incident = params["id"];
     document.title = "Incident "+incident+"|BanManager";
     incident = incidents.filter(function (i) {return (i["ID"] == incident);})[0];
-    console.log(incident);
     if (incident != undefined) {
         MakeAsyncRequest("GET","/api/v1/query_sanction",get_sanctions);
     } else {
@@ -43,6 +42,8 @@ function get_students(data) {
     render();
 }
 function render() {
+    var loader = document.getElementById("ajax-loader");
+    
     var output = document.getElementById("incident_info");
     output.innerHTML += "<p>Incident "+incident["ID"]+"</p>";
     var table = document.createElement("table");
@@ -78,7 +79,8 @@ function render() {
     // Now we do the sanction info
     output = document.getElementById("sanction_info");
     if (sanction == undefined) {
-        output.innerHTML = "No sanction has been given. <button onclick=\"make_new_sanction()\" id=\"make_sanction\">Add sanction</button>";
+        output.innerHTML = "No sanction has been given. <button onclick=\"make_new_sanction()\">Add sanction</button>";
+        loader.parentNode.removeChild(loader);
         return;
     }
     table = document.createElement("table");
@@ -108,6 +110,7 @@ function render() {
     punishment.insertCell(2).innerHTML = "<button id=\"sanction_button\" onclick=\"edit('sanction'); return false;\">Edit</button>";
     
     output.appendChild(table);
+    loader.parentNode.removeChild(loader);
 }
 function edit(field,element="textarea",type="") {
     var node = document.getElementById(field);
@@ -152,6 +155,38 @@ function submit_change(field,element,type) {
     var button = document.getElementById(field+"_button");
     button.innerHTML = "Edit";
     button.onclick = function () {edit(field,element,type); return false;};
+}
+function make_new_sanction() {
+    output = document.getElementById("sanction_info");
+    output.innerHTML = "<form id=\"sanction_form\" action=\"\">\
+    <table class=\"horizontal-table long-table\">\
+    <tr><td>Start Date:</td><td><input type=\"date\" name=\"start_date\"></td></tr>\
+    <tr><td>End Date:</td><td><input type=\"date\" name=\"end_date\"></td></tr>\
+    <tr><td>Sanction:</td><td><textarea name=\"sanction\"></textarea></td></tr>\
+    </table>\
+    <input id=\"submit_button\" type=\"submit\" onclick=\"add_sanction(); return false;\" value=\"Submit\">\
+    <p id=\"note\"></p>\
+    </form>";
+}
+function add_sanction() {
+    var button = document.getElementById("submit_button");
+    var form = button.parentNode;
+    SetAjaxLoader(button);
+    var data = encodeFormData({id:incident["ID"],
+                               start_date:form.elements["start_date"].value,
+                               end_date:form.elements["end_date"].value,
+                               sanction:form.elements["sanction"].value});
+    MakeAsyncRequest("POST","/api/v1/add_new_sanction",add_sanction_callback,data,"application/x-www-form-urlencoded");
+}
+function add_sanction_callback(data) {
+    var response = JSON.parse(data);
+    var form = document.getElementById("sanction_form");
+    if (response["status"] == "OK") {
+        location.reload();
+    } else {
+        UnsetAjaxLoader("submit_button","Submit",add_sanction);
+        document.getElementById("note").innerHTML = response["error"];
+    }
 }
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_incidents)});
 </script>
