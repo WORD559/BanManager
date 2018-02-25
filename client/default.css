@@ -43,7 +43,7 @@ p.sanctioned {
 .account-widget td:hover {
     background-color: #F0F0F0;
 }
-.account-widget td, a {
+.account-widget a {
     display:block;
 }
 .banned-dashboard {
@@ -65,4 +65,7 @@ p.sanctioned {
 }
 td.long-column {
     white-space: initial;
+}
+a {
+    display: inline;
 }
