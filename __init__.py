@@ -358,7 +358,6 @@ def add_new_student(request):
 def student_query(request):
     #sql_cfg = get_SQL_config()
     user = get_username(request)
-    print request.args
     Filter = {}
     try:
         if request.args.has_key("user"):
