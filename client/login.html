@@ -16,7 +16,7 @@ function login_user() {
 
 function login_callback(data) {
     var response = JSON.parse(data);
-    console.log(response);
+    //console.log(response);
     var f = document.getElementById("login_form");
     var status_note = document.getElementById("status");
     if (response["status"] == "OK") {
