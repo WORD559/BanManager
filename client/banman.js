@@ -1,3 +1,4 @@
+var user_rank;
 function check_logged_in(f,fetch_incidents=true) { 
     function login_callback(data) {
         var response = JSON.parse(data);
@@ -9,6 +10,7 @@ function check_logged_in(f,fetch_incidents=true) {
         if (fetch_incidents) {
             get_unresolved_incidents_count(document.getElementById("incidents"));
         }
+        user_rank = response["data"]["rank"];
         f();
     }
     MakeAsyncRequest("GET","/api/v1/status",login_callback);
