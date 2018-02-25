@@ -55,7 +55,8 @@ function render() {
     var cell = user.insertCell(1);
     cell.innerHTML = incident["Username"];
     cell.id = "new_user";
-    user.insertCell(2).innerHTML = "<button id=\"new_user_button\" onclick=\"edit('new_user','select'); return false;\">Edit</button>";
+    if (user_rank <= 2) {
+    user.insertCell(2).innerHTML = "<button id=\"new_user_button\" onclick=\"edit('new_user','select'); return false;\">Edit</button>";}
     
     // Add the date of the incident
     var date = table.insertRow(-1);
@@ -63,7 +64,8 @@ function render() {
     cell = date.insertCell(1);
     cell.innerHTML = incident["Date"];
     cell.id = "date";
-    date.insertCell(2).innerHTML = " <button id=\"date_button\" onclick=\"edit('date','input','date'); return false;\">Edit</button>";
+    if (user_rank <= 2) {
+    date.insertCell(2).innerHTML = " <button id=\"date_button\" onclick=\"edit('date','input','date'); return false;\">Edit</button>";}
     
     // Report
     var report = table.insertRow(-1);
@@ -72,14 +74,18 @@ function render() {
     cell.innerHTML = incident["Report"];
     cell.setAttribute("class","long-column");
     cell.id = "report";
-    report.insertCell(2).innerHTML = "<button id=\"report_button\" onclick=\"edit('report'); return false;\">Edit</button>";
+    if (user_rank <= 2) {
+    report.insertCell(2).innerHTML = "<button id=\"report_button\" onclick=\"edit('report'); return false;\">Edit</button>";}
     
     output.appendChild(table);
     
     // Now we do the sanction info
     output = document.getElementById("sanction_info");
     if (sanction == undefined) {
-        output.innerHTML = "No sanction has been given. <button onclick=\"make_new_sanction()\">Add sanction</button>";
+        output.innerHTML = "No sanction has been given."
+        if (user_rank <= 1) {
+            output.innerHTML += "<button onclick=\"make_new_sanction()\">Add sanction</button>";
+        }
         loader.parentNode.removeChild(loader);
         return;
     }
@@ -92,13 +98,15 @@ function render() {
     cell = start.insertCell(1);
     cell.innerHTML = sanction["StartDate"];
     cell.id = "start_date";
-    start.insertCell(2).innerHTML = "<button id=\"start_date_button\" onclick=\"edit('start_date','input','date'); return false;\">Edit</button>"
+    if (user_rank <= 1) {
+        start.insertCell(2).innerHTML = "<button id=\"start_date_button\" onclick=\"edit('start_date','input','date'); return false;\">Edit</button>";}
     var end = table.insertRow(-1);
     end.insertCell(0).innerHTML = "End Date:";
     cell = end.insertCell(1);
     cell.innerHTML = sanction["EndDate"];
     cell.id = "end_date";
-    end.insertCell(2).innerHTML = "<button id=\"end_date_button\" onclick=\"edit('end_date','input','date'); return false;\">Edit</button>";
+    if (user_rank <= 1) {
+        end.insertCell(2).innerHTML = "<button id=\"end_date_button\" onclick=\"edit('end_date','input','date'); return false;\">Edit</button>";}
     
     // Add the sanction
     var punishment = table.insertRow(-1);
@@ -107,7 +115,8 @@ function render() {
     cell.innerHTML = sanction["Sanction"];
     cell.setAttribute("class","long-column");
     cell.id = "sanction";
-    punishment.insertCell(2).innerHTML = "<button id=\"sanction_button\" onclick=\"edit('sanction'); return false;\">Edit</button>";
+    if (user_rank <= 1) {
+        punishment.insertCell(2).innerHTML = "<button id=\"sanction_button\" onclick=\"edit('sanction'); return false;\">Edit</button>";}
     
     output.appendChild(table);
     loader.parentNode.removeChild(loader);
