@@ -37,7 +37,8 @@ function sort_and_render(data) {
         var username = row.insertCell(1);
         var date = row.insertCell(2);
         var report = row.insertCell(3);
-        var delete_button = row.insertCell(4);
+        if (user_rank <= 2) {
+        var delete_button = row.insertCell(4);}
         ID.innerHTML = "<a name=\""+incident["ID"]+"\"></a><a href=\"/view_incident?id="+incident["ID"]+"\">"+incident["ID"]+"</a>";
         username.innerHTML = "<p>"+incident["Username"]+"</p>";
         date.innerHTML = "<p>"+incident["Date"]+"</p>";
@@ -50,10 +51,13 @@ function sort_and_render(data) {
         // sanction = -1
         // The button, onclick, produces: delete_incident(14,"incident_5",true);
         // This tells the delete function to request the API deletes incident 14 and remove the rows with ids "incident_5" and "incident_unsanc_5"
-        if (sanction != -1) {
-            delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\"); return false;'>Delete</button>";
-        } else {
-            delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\",true); return false;'>Delete</button>";
+        
+        if (user_rank <= 2) {
+            if (sanction != -1) {
+                delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\"); return false;'>Delete</button>";
+            } else {
+                delete_button.innerHTML = "<button onclick='delete_incident("+incident["ID"]+",\""+row.id+"\",true); return false;'>Delete</button>";
+            }
         }
         // return the row so we can do more with it in a bit
         return row;
@@ -92,11 +96,18 @@ function sort_and_render(data) {
     // set the unresolved counter
     document.getElementById("incidents").innerHTML = (unsanctioned.rows.length - 1);
     
+    //If you don't have permission to delete stuff, remove the delete header
+    if (user_rank > 2) {
+        document.getElementById("unsanc-table-headers").deleteCell(-1);
+        document.getElementById("table-headers").deleteCell(-1);
+    }
+    
     // If there's nothing new in the unsanctioned table, remove it
     if (unsanctioned.rows.length == 1) {
         var top_span = document.getElementById("top_span");
         top_span.parentNode.removeChild(top_span);
     }
+        
     // remove the ajax loader
     var loader = document.getElementById("ajax-loader");
     loader.parentNode.removeChild(loader);
@@ -149,7 +160,7 @@ check_logged_in(get_incidents,false);
 <span id="top_span">
 <p>Unresolved Incidents</p>
 <table class="bordered-table incidents" id="unsanctioned_table">
-<tr>
+<tr id="unsanc-table-headers">
 <th>ID</th>
 <th>Username</th>
 <th>Date</th>
@@ -161,7 +172,7 @@ check_logged_in(get_incidents,false);
 
 <p>All incidents</p>
 <table class="bordered-table incidents" id="item_table">
-<tr>
+<tr id="table-headers">
 <th>ID</th>
 <th>Username</th>
 <th>Date</th>
