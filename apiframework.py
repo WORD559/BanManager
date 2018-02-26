@@ -109,6 +109,14 @@ class Client(object):
                     
     def add_route(self,name,page):
         data = (os.path.dirname(page),os.path.basename(page))
-        if os.path.basename(name)[:6] == "index.": # This allows our index pages to be registered to the / as well as the /<name> -- something we must do manually in Flask
-            self.routes[os.path.dirname(name)+"/"] = data
-        self.routes[name] = data
+        if isinstance(name,str):
+            if os.path.basename(name)[:6] == "index.": # This allows our index pages to be registered to the / as well as the /<name> -- something we must do manually in Flask
+                self.routes[os.path.dirname(name)+"/"] = data
+            self.routes[name] = data
+        elif isinstance(name,list):
+            for n in name:
+                if os.path.basename(n)[:6] == "index.": # This allows our index pages to be registered to the / as well as the /<name> -- something we must do manually in Flask
+                    self.routes[os.path.dirname(n)+"/"] = data
+                self.routes[n] = data
+        else:
+            raise TypeError
