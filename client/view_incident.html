@@ -42,6 +42,9 @@ function get_students(data) {
     render();
 }
 function render() {
+    var incident_count = document.getElementById("incidents");
+    incident_count.innerHTML = (incidents.length - sanctions.length);
+    
     var loader = document.getElementById("ajax-loader");
     
     var output = document.getElementById("incident_info");
@@ -197,7 +200,7 @@ function add_sanction_callback(data) {
         document.getElementById("note").innerHTML = response["error"];
     }
 }
-check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_incidents)});
+check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_incidents)},false);
 </script>
 </head>
 
