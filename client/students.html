@@ -1,0 +1,83 @@
+<html>
+<head>
+<title>Students|BanManager</title>
+<link rel="icon" href="/banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="/default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+var incidents;
+var sanctions;
+var students;
+function get_sanctions(data) {
+    var response = JSON.parse(data);
+    incidents = response["data"];
+    MakeAsyncRequest("GET","/api/v1/query_sanction",get_students);
+}
+function get_students(data) {
+    var response = JSON.parse(data);
+    sanctions = response["data"];
+    MakeAsyncRequest("GET","/api/v1/query_student",render_table);
+}
+function render_table(data) {
+    var response = JSON.parse(data);
+    students = response["data"].sort(function (student) {return student["Username"].charCodeAt(0);});
+    
+    var unresolved_incidents = document.getElementById("incidents");
+    unresolved_incidents.innerHTML = (incidents.length - sanctions.length);
+    
+    function set_cells(table,student,counter) {
+        var row = table.insertRow(-1);
+        row.id = "student_"+counter;
+        
+        row.insertCell(0).innerHTML = '<a href="/students/view_student?username='+student["Username"]+'">'+student["Username"]+'</a>';
+        var forename = student["Forename"];
+        if (forename == null) {
+            forename = "Unknown";
+        }
+        row.insertCell(1).innerHTML = forename;
+        var surname = student["Surname"];
+        if (surname == null) {
+            surname = "Unknown";
+        }
+        row.insertCell(2).innerHTML = surname;
+        
+        return row;
+    }
+    
+    var table = document.getElementById("student_table");
+    
+    var incident_students = incidents.map(function (incident) {return incident["Username"];});
+    var sanction_incidents = sanctions.map(function (sanction) {return sanction["IncidentID"];});
+    var filtered_incidents = incidents.filter(function (incident) {console.log(incident["ID"]);return (sanction_incidents.indexOf(incident["ID"]) != -1);});
+    
+    for (var i=0;i < students.length;i++) {
+        var row = set_cells(table,students[i],i);
+        row.insertCell(-1).innerHTML = incident_students.filter(function (incident) {return (incident==students[i]["Username"]);}).length;
+        row.insertCell(-1).innerHTML = filtered_incidents.filter(function (sanction) {return (sanction["Username"]==students[i]["Username"]);}).length;
+    }
+        
+}
+check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);},false);
+</script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="/menubar.js"></script>
+
+<p>All students</p>
+<table class="bordered-table incidents" id="student_table">
+<tr id="table-headers">
+<th>Username</th>
+<th>Forename</th>
+<th>Surname</th>
+<th>Incidents</th>
+<th>Sanctions</th>
+</tr>
+</table>
+
+</body>
+</html>

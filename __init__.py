@@ -1192,5 +1192,6 @@ client.add_route("logout","client/logout.html")
 client.add_route("incidents","client/incidents.html")
 client.add_route("incidents/view_incident","client/view_incident.html")
 client.add_route("incidents/add_incident","client/new_incident.html")
+client.add_route("students","client/students.html")
 
 client.start()
