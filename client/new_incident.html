@@ -1,0 +1,90 @@
+<html>
+<head>
+<title>New Incident|BanManager</title>
+<link rel="icon" href="/banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="/default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+var students;
+function check_rank() {
+    var output = document.getElementById("incident_form");
+    if (user_rank > 2) {
+        output.innerHTML = "<p>You do not have permission to submit new incidents. <a href=\"/dash\">Return to the dashboard</a></p>";
+        return;
+    }
+    MakeAsyncRequest("GET","/api/v1/query_student",get_students);
+}
+function get_students(data) {
+    response = JSON.parse(data);
+    students = response["data"];
+    var today = new Date();
+    var date = document.getElementById("date_input");
+    var day = today.getDate();
+    var month = today.getMonth() + 1;
+    var year = today.getFullYear();
+    if (day < 10) {
+        day = "0" + day;
+    }
+    if (month < 10) {
+        month = "0" + month;
+    }
+    date.value = year+"-"+month+"-"+day;
+    var select = document.getElementById("username_input");
+    for (var i=0;i < students.length;i++) {
+        var option = document.createElement("option");
+        option.value = students[i]["Username"];
+        option.innerHTML = students[i]["Username"];
+        select.appendChild(option);
+    }
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+function submit_incident() {
+    var f = document.getElementById("incident");
+    var data = {"user":f.elements["user"].value,
+                "date":f.elements["date"].value,
+                "report":f.elements["report"].value};
+    console.log(data);
+    var button = document.getElementById("submit_button");
+    SetAjaxLoader(button);
+    MakeAsyncRequest("POST","/api/v1/add_new_incident",incident_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
+function incident_callback(data) {
+    var response = JSON.parse(data);
+    var f = document.getElementById("incident");
+    var status_note = document.getElementById("status_note");
+    if (response["status"] == "OK") {
+        f.parentNode.removeChild(f);
+        status_note.innerHTML = "Submitted!";
+        window.location = "/incidents";
+    } else {
+        UnsetAjaxLoader("submit_button","Submit",submit_incident);
+        status_note.innerHTML = response["error"];
+    }
+}
+check_logged_in(check_rank);
+</script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="menubar.js"></script>
+
+<div id="incident_form">
+<p>Submit an incident</p>
+<form id="incident" action="">
+<table class="horizontal-table">
+<tr><td>Username:</td><td><select name="user" id="username_input"></select></td></tr>
+<tr><td>Date:</td><td><input type="date" name="date" id="date_input"></td></tr>
+<tr><td>Report:</td><td><textarea name="report" placeholder="Enter a report..."></textarea></td></tr>
+</table>
+<input id="submit_button" type="submit" value="Submit" onclick="submit_incident(); return false;">
+</form>
+<p id="status_note"></p>
+</div>
+
+</body>
+</html>
