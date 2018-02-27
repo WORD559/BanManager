@@ -449,7 +449,7 @@ def add_new_incident(request):
     else:
         student = sql_sanitise(str(request.form["user"].lower()),underscore=False,percent=False)
     if not (request.form.has_key("report")):
-        return json.dumps({"status":"BAD","error":"Missing username."})
+        return json.dumps({"status":"BAD","error":"Missing report."})
     else:
         report = sql_sanitise(str(request.form["report"]))
     if not (request.form.has_key("date")):
