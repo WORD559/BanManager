@@ -57,7 +57,8 @@ function render_table(data) {
         row.insertCell(-1).innerHTML = incident_students.filter(function (incident) {return (incident==students[i]["Username"]);}).length;
         row.insertCell(-1).innerHTML = filtered_incidents.filter(function (sanction) {return (sanction["Username"]==students[i]["Username"]);}).length;
     }
-        
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
 }
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);},false);
 </script>
