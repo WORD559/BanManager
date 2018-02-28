@@ -20,7 +20,7 @@ function get_incidents(data) {
         document.getElementById("incident_info").innerHTML = "Incident does not exist!";
         return;
     }
-    incident = params["id"];
+    incident = params["id"][0];
     document.title = "Incident "+incident+"|BanManager";
     incident = incidents.filter(function (i) {return (i["ID"] == incident);})[0];
     if (incident != undefined) {
