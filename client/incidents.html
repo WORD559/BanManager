@@ -86,7 +86,7 @@ function sort_and_render(data) {
         // If there is actually a sanction...
         if (sanction != -1) {
             // add it
-            sanction_text.innerHTML = "<p>"+"<a href=\"/sanctions#"+sanctions[sanction]["ID"]+"\">"+sanctions[sanction]["ID"]+":</a>"+" "+sanctions[sanction]["Sanction"]+"</p>";
+            sanction_text.innerHTML = "<p>"+sanctions[sanction]["Sanction"]+"</p>";
             sanction_text.setAttribute("class","long-column");
         } else {
             // otherwise, add it to the unsanctioned table with an _unsanc id
