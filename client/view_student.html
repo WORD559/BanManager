@@ -1,0 +1,130 @@
+<html>
+<head>
+<title>Students|BanManager</title>
+<link rel="icon" href="/banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="/default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+var incidents;
+var sanctions;
+var students;
+var student;
+function get_incidents(data) {
+    var response = JSON.parse(data);
+    students = response["data"];
+    var params = getURLParams(window.location.href);
+    if (!params.hasOwnProperty("username")) {
+        document.getElementById("student_info").innerHTML = "Student does not exist!";
+        document.getElementById("student_incidents").innerHTML = "";
+        return;
+    }
+    student = params["username"][0].toLowerCase();
+    student = students.filter(function (i) {return (i["Username"] == student);})[0];
+    if (student == undefined) {
+        document.getElementById("student_info").innerHTML = "Student does not exist!";
+        document.getElementById("student_incidents").innerHTML = "";
+        return;
+    }
+    if (student["Forename"] != null && student["Surname"] != null) {
+        document.title = student["Forename"]+" "+student["Surname"]+"|BanManager";
+    } else {
+        document.title = student["Username"]+"|BanManager";
+    }
+    MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);
+}
+function get_sanctions(data) {
+    var response = JSON.parse(data);
+    incidents = response["data"].sort(function (i) {return new Date(i["Date"]);});
+    MakeAsyncRequest("GET","/api/v1/query_sanction",render);
+}
+function render(data) {
+    var response = JSON.parse(data);
+    sanctions = response["data"];
+    
+    document.getElementById("incidents").innerHTML = (incidents.length-sanctions.length);
+    
+    document.getElementById("student_username").innerHTML = student["Username"];
+    
+    var photo = document.createElement("img");
+    photo.src = "/api/v1/photo?user="+student["Username"];
+    photo.setAttribute("class","small-photo");
+    var photo_field = document.getElementById("photo");
+    photo_field.insertBefore(photo,photo_field.firstChild);
+    
+    var forename = document.getElementById("forename");
+    if (student["Forename"] == null) {
+        forename.innerHTML = "Unknown";
+    } else {
+        forename.innerHTML = student["Forename"];
+    }
+    var surname = document.getElementById("surname");
+    if (student["Surname"] == null) {
+        surname.innerHTML = "Unknown";
+    } else {
+        surname.innerHTML = student["Surname"];
+    }
+    
+    var incident_table = document.getElementById("incidents_table");
+    var filtered_incidents = incidents.filter(function (i) {return (i["Username"] == student["Username"]);});
+    var incident_ids = filtered_incidents.map(function (i) {return i["ID"];});
+    var filtered_sanctions = sanctions.filter(function (i) {return (incident_ids.indexOf(i["IncidentID"]) != -1);});
+    var sanction_incident_ids = filtered_sanctions.map(function (i) {return i["IncidentID"];});
+    console.log(filtered_incidents);
+    console.log(filtered_sanctions);
+    console.log(sanction_incident_ids);
+    for (var i = 0;i < filtered_incidents.length;i++) {
+        var row = incident_table.insertRow(-1);
+        row.insertCell(0).innerHTML = "<a href=\"/incidents/view_incident?id="+incidents[i]["ID"]+"\">"+filtered_incidents[i]["ID"]+"</a>";
+        row.insertCell(1).innerHTML = filtered_incidents[i]["Date"];
+        row.insertCell(2).innerHTML = filtered_incidents[i]["Report"];
+        var sanction_cell = row.insertCell(3);
+        if (sanction_incident_ids.indexOf(filtered_incidents[i]["ID"]) != -1) {
+            sanction_cell.innerHTML = sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])]["Sanction"];
+        }
+    }
+    
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_incidents);},false);
+</script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="/menubar.js"></script>
+<p>Student</p>
+<div id="student_info">
+<table id="student+photo">
+<tr>
+<td id="photo"><p>Hover over photo to enlarge</p></td>
+<td>
+<table id="student_table">
+<tr>
+<td>Username:</td><td id="student_username"></td>
+</tr><tr>
+<td>Forename:</td><td id="forename"></td>
+</tr><tr>
+<td>Surname:</td><td id="surname"></td>
+</tr>
+</table>
+</tr>
+</table>
+</div>
+<div id="student_incidents">
+<p>Incidents</p>
+<table class="incidents bordered-table" id="incidents_table">
+<tr>
+<th>ID</th>
+<th>Date</th>
+<th>Report</th>
+<th>Sanction</th>
+</tr>
+</table>
+</div>
+
+</body>
+</html>
