@@ -54,11 +54,34 @@ function render_table(data) {
     
     for (var i=0;i < students.length;i++) {
         var row = set_cells(table,students[i],i);
-        row.insertCell(-1).innerHTML = incident_students.filter(function (incident) {return (incident==students[i]["Username"]);}).length;
-        row.insertCell(-1).innerHTML = filtered_incidents.filter(function (sanction) {return (sanction["Username"]==students[i]["Username"]);}).length;
+        row.id = students[i]["Username"];
+        row.insertCell(3).innerHTML = incident_students.filter(function (incident) {return (incident==students[i]["Username"]);}).length;
+        row.insertCell(4).innerHTML = filtered_incidents.filter(function (sanction) {return (sanction["Username"]==students[i]["Username"]);}).length;
+        
+        if (user_rank <= 2) {
+            var delete_button = row.insertCell(5);
+            delete_button.innerHTML = "<button onclick='delete_student(\""+students[i]["Username"]+"\"); return false;'>Delete</button>";
+        }
     }
+    // Remove the delete header if need be
+    if (user_rank > 2) {
+        document.getElementById("table-headers").deleteCell(-1);
+    }
+    
     var loader = document.getElementById("ajax-loader");
     loader.parentNode.removeChild(loader);
+}
+function delete_student(student) {
+    function callback(data) {
+        var response = JSON.parse(data);
+        
+        if (response["status"] == "OK") {
+            var row = document.getElementById(student);
+            row.parentNode.removeChild(row);
+        }
+    }
+    var data = encodeFormData({delete:true,user:student});
+    MakeAsyncRequest("POST","/api/v1/modify_student",callback,data,"application/x-www-form-urlencoded");
 }
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_sanctions);},false);
 </script>
@@ -77,6 +100,7 @@ check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get
 <th>Surname</th>
 <th>Incidents</th>
 <th>Sanctions</th>
+<th>Delete</th>
 </tr>
 </table>
 
