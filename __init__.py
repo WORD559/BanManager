@@ -29,7 +29,8 @@ api = apiframework.API(app)
 # Since we're now a package, we need to move our current working directory to the package directory
 os.chdir(app.root_path)
 
-
+def uni_encode_arg(x):
+    return unicode(x).encode("utf-8")
 
 # Allows a client to check the status of the database
 # Good for things such as setup procedures
@@ -235,8 +236,8 @@ def user_login(request):
     if not (request.form.has_key("user") and request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing username and/or password."})
     else:
-        user = str(request.form["user"].lower())
-        passwd = str(request.form["pass"])
+        user = uni_encode_arg(request.form["user"].lower())
+        passwd = uni_encode_arg(request.form["pass"])
 
     # Log into the SQL database
     db = connect_db()
@@ -294,13 +295,13 @@ def add_new_student(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = str(request.form["user"].lower()).replace(" ","_")
+        student = uni_encode_arg(request.form["user"].lower()).replace(" ","_")
     if request.form.has_key("forename"):
-        forename = str(request.form["forename"])
+        forename = uni_encode_arg(request.form["forename"])
     else:
         forename = None
     if request.form.has_key("surname"):
-        surname = str(request.form["surname"])
+        surname = uni_encode_arg(request.form["surname"])
     else:
         surname = None
     if request.files.has_key("photo"):
@@ -361,11 +362,11 @@ def student_query(request):
     Filter = {}
     try:
         if request.args.has_key("user"):
-            Filter["user"] = str(request.args["user"]).lower().split(" ")
+            Filter["user"] = uni_encode_arg(request.args["user"]).lower().split(" ")
         if request.args.has_key("forename"):
-            Filter["forename"] = str(request.args["forename"]).lower()
+            Filter["forename"] = uni_encode_arg(request.args["forename"]).lower()
         if request.args.has_key("surname"):
-            Filter["surname"] = str(request.args["surname"]).lower()
+            Filter["surname"] = uni_encode_arg(request.args["surname"]).lower()
         if request.args.has_key("like"):
             Filter["like"] = bool(request.args["like"])
 
@@ -447,15 +448,15 @@ def add_new_incident(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = sql_sanitise(str(request.form["user"].lower()),underscore=False,percent=False)
+        student = sql_sanitise(uni_encode_arg(request.form["user"].lower()),underscore=False,percent=False)
     if not (request.form.has_key("report")):
         return json.dumps({"status":"BAD","error":"Missing report."})
     else:
-        report = sql_sanitise(str(request.form["report"]),underscore=False,percent=False)
+        report = sql_sanitise(uni_encode_arg(request.form["report"]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = datetime.date.today().strftime("%Y-%m-%d")
     else:
-        date = sql_sanitise(str(request.form["date"]))
+        date = sql_sanitise(uni_encode_arg(request.form["date"]))
 
     # Get the private key
     key = get_private_key(request)
@@ -487,13 +488,13 @@ def incident_query(request):
     Filter = {}
     try:
         if request.args.has_key("user"):
-            Filter["user"] = str(request.args["user"]).lower()
+            Filter["user"] = uni_encode_arg(request.args["user"]).lower()
         if request.args.has_key("before"):
-            Filter["before"] = str(request.args["before"])
+            Filter["before"] = uni_encode_arg(request.args["before"])
         if request.args.has_key("after"):
-            Filter["after"] = str(request.args["after"])
+            Filter["after"] = uni_encode_arg(request.args["after"])
         if request.args.has_key("id"):
-            Filter["id"] = str(request.args["id"]).split(" ")
+            Filter["id"] = uni_encode_arg(request.args["id"]).split(" ")
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -572,15 +573,15 @@ def add_new_sanction(request):
     if not (request.form.has_key("sanction")):
         return json.dumps({"status":"BAD","error":"Missing sanction."})
     else:
-        sanction = sql_sanitise(str(request.form["sanction"]),underscore=False,percent=False)
+        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = datetime.date.today().strftime("%Y-%m-%d")
     else:
-        start_date = sql_sanitise(str(request.form["start_date"]))
+        start_date = sql_sanitise(uni_encode_arg(request.form["start_date"]))
     if not (request.form.has_key("end_date")):
         return json.dumps({"status":"BAD","error":"Missing end date."})
     else:
-        end_date = sql_sanitise(str(request.form["end_date"]))
+        end_date = sql_sanitise(uni_encode_arg(request.form["end_date"]))
 
     # Get the private key
     key = get_private_key(request)
@@ -612,17 +613,17 @@ def sanction_query(request):
     Filter = {}
     try:
         if request.args.has_key("incident"):
-            Filter["incident"] = [int(i) for i in str(request.args["incident"]).split(" ")]
+            Filter["incident"] = [int(i) for i in uni_encode_arg(request.args["incident"]).split(" ")]
         if request.args.has_key("starts_before"):
-            Filter["starts_before"] = str(request.args["starts_before"])
+            Filter["starts_before"] = uni_encode_arg(request.args["starts_before"])
         if request.args.has_key("starts_after"):
-            Filter["starts_after"] = str(request.args["starts_after"])
+            Filter["starts_after"] = uni_encode_arg(request.args["starts_after"])
         if request.args.has_key("ends_before"):
-            Filter["ends_before"] = str(request.args["ends_before"])
+            Filter["ends_before"] = uni_encode_arg(request.args["ends_before"])
         if request.args.has_key("ends_after"):
-            Filter["ends_after"] = str(request.args["ends_after"])
+            Filter["ends_after"] = uni_encode_arg(request.args["ends_after"])
         if request.args.has_key("id"):
-            Filter["id"] = [int(i) for i in str(request.args["id"]).split(" ")]
+            Filter["id"] = [int(i) for i in uni_encode_arg(request.args["id"]).split(" ")]
     except:
         return json.dumps({"status":"BAD","error":"Invalid arguments."})
     
@@ -720,7 +721,7 @@ def modify_user(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = sql_sanitise(str(request.form["user"]),underscore=False,percent=False).lower()
+        student = sql_sanitise(uni_encode_arg(request.form["user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("delete_photo")):
         delete_photo = False
     else:
@@ -733,15 +734,15 @@ def modify_user(request):
     if not (request.form.has_key("new_user")):
         new = None
     else:
-        new = sql_sanitise(str(request.form["new_user"]),underscore=False,percent=False).lower()
+        new = sql_sanitise(uni_encode_arg(request.form["new_user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("forename")):
         forename = None
     else:
-        forename = sql_sanitise(str(request.form["forename"]),underscore=False,percent=False)
+        forename = sql_sanitise(uni_encode_arg(request.form["forename"]),underscore=False,percent=False)
     if not (request.form.has_key("surname")):
         surname = None
     else:
-        surname = sql_sanitise(str(request.form["surname"]),underscore=False,percent=False)
+        surname = sql_sanitise(uni_encode_arg(request.form["surname"]),underscore=False,percent=False)
     if request.files.has_key("photo"):
         photo = request.files["photo"]
     else:
@@ -763,7 +764,7 @@ def modify_user(request):
         db = connect_db()
         cur = db.cursor()
         cur.execute("SELECT IncidentID FROM Incidents WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"AES":aes_key,"user":student}))
-        incidents = [str(i[0]) for i in cur.fetchall()]
+        incidents = [uni_encode_arg(i[0]) for i in cur.fetchall()]
         if len(incidents) > 0:
             # Now we delete any connected sanctions
             condition = "' OR IncidentID = '".join(incidents)
@@ -848,15 +849,15 @@ def modify_incident(request):
     if not (request.form.has_key("new_user")):
         new = None
     else:
-        new = sql_sanitise(str(request.form["new_user"]),underscore=False,percent=False).lower()
+        new = sql_sanitise(uni_encode_arg(request.form["new_user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("report")):
         report = None
     else:
-        report = sql_sanitise(str(request.form["report"]),underscore=False,percent=False)
+        report = sql_sanitise(uni_encode_arg(request.form["report"]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = None
     else:
-        date = sql_sanitise(str(request.form["date"]))
+        date = sql_sanitise(uni_encode_arg(request.form["date"]))
 
     # Get the user's private key
     key = get_private_key(request)
@@ -918,15 +919,15 @@ def modify_sanction(request):
     if not (request.form.has_key("sanction")):
         sanction = None
     else:
-        sanction = sql_sanitise(str(request.form["sanction"]),underscore=False,percent=False)
+        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = None
     else:
-        start_date = sql_sanitise(str(request.form["start_date"]))
+        start_date = sql_sanitise(uni_encode_arg(request.form["start_date"]))
     if not (request.form.has_key("end_date")):
         end_date = None
     else:
-        end_date = sql_sanitise(str(request.form["end_date"]))
+        end_date = sql_sanitise(uni_encode_arg(request.form["end_date"]))
 
     # Get the user's private key
     key = get_private_key(request)
@@ -980,11 +981,11 @@ def change_password(request):
     if not (request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing current password."})
     else:
-        passwd = str(request.form["pass"])
+        passwd = uni_encode_arg(request.form["pass"])
     if not (request.form.has_key("new")):
         return json.dumps({"status":"BAD","error":"Missing new password."})
     else:
-        new = str(request.form["new"])
+        new = uni_encode_arg(request.form["new"])
 
     # Validate that the old password is correct.
     db = connect_db()
@@ -993,7 +994,7 @@ def change_password(request):
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
     pwhash,salt = cur.fetchall()[0]
     hasher = SHA256.new()
-    hasher.update(salt+passwd)
+    hasher.update((salt.encode("hex")+passwd.encode("hex")).decode("hex"))
     if pwhash != hasher.digest():
         return json.dumps({"status":"BAD","error":"Incorrect username/password."})
 
@@ -1046,11 +1047,11 @@ def create_account(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        username = str(request.form["user"])
+        username = uni_encode_arg(request.form["user"])
     if not (request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing password."})
     else:
-        passwd = str(request.form["pass"])
+        passwd = uni_encode_arg(request.form["pass"])
     if not (request.form.has_key("rank")):
         return json.dumps({"status":"BAD","error":"Missing rank."})
     else:
@@ -1103,7 +1104,7 @@ def delete_account(request):
     else:
         username = request.form["user"]
     if (username == user and bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))) or rank == 0: # This allows admins to do this for other users
-        username = str(request.form["user"])
+        username = uni_encode_arg(request.form["user"])
     else:
         raise RankError
     if (request.form.has_key("pass")):
@@ -1167,13 +1168,13 @@ def get_photo(request):
 
     # Get the photo's filekey
     try:
-        photokey = get_file_key(user,key,str(photoID))
+        photokey = get_file_key(user,key,uni_encode_arg(photoID))
     except FileKeyError:
         raise PhotoError
 
     # And decrypt the image, to a StringIO
     path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
-    path += "/"+str(photoID)+".jpg"
+    path += "/"+uni_encode_arg(photoID)+".jpg"
     im = decrypt_image(photokey,path,stringio=True)
 
     return send_file(im,mimetype="image/jpeg")
