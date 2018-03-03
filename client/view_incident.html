@@ -56,7 +56,7 @@ function render() {
     var user = table.insertRow(-1);
     user.insertCell(0).innerHTML = "Username:";
     var cell = user.insertCell(1);
-    cell.innerHTML = incident["Username"];
+    cell.innerHTML = '<a href="/students/view_student?username='+encodeURIComponent(incident["Username"])+'">'+incident["Username"]+'</a>';
     cell.id = "new_user";
     if (user_rank <= 2) {
     user.insertCell(2).innerHTML = "<button id=\"new_user_button\" onclick=\"edit('new_user','select'); return false;\">Edit</button>";}
