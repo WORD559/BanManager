@@ -31,7 +31,7 @@ function render_table(data) {
         var row = table.insertRow(-1);
         row.id = "student_"+counter;
         
-        row.insertCell(0).innerHTML = '<a href="/students/view_student?username='+student["Username"]+'">'+student["Username"]+'</a>';
+        row.insertCell(0).innerHTML = '<a href="/students/view_student?username='+encodeURIComponent(student["Username"])+'">'+student["Username"]+'</a>';
         var forename = student["Forename"];
         if (forename == null) {
             forename = "Unknown";
