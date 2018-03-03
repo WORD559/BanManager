@@ -13,7 +13,9 @@ function MakeAsyncRequest(method,url,callback,data=null,content_type="applicatio
         data["_"] = (new Date()).getTime();
     }}
     xhttp.open(method,url,true);
-    xhttp.setRequestHeader("Content-type",content_type);
+    if (content_type != null) {
+        xhttp.setRequestHeader("Content-type",content_type);
+    }
     xhttp.send(data);
 }
 

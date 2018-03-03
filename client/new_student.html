@@ -20,10 +20,12 @@ function submit_student() {
     var button = document.getElementById("submit_button");
     SetAjaxLoader(button);
     var f = document.getElementById("student");
-    var data = {"user":f.elements["user"].value,
-                "forename":f.elements["forename"].value,
-                "surname":f.elements["surname"].value};
-    MakeAsyncRequest("POST","/api/v1/add_new_student",student_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+    var data = new FormData(f);
+
+    //data.append("user",f.elements["user"].value);
+    //data.append("forename",f.elements["forename"].value);
+    //data.append("surname",f.elements["surname"].value);
+    MakeAsyncRequest("POST","/api/v1/add_new_student",student_callback,data,null);//"multipart/form-data");
 }
 function student_callback(data) {
     var response = JSON.parse(data);
