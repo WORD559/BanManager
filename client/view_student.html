@@ -73,7 +73,7 @@ function render(data) {
     var sanction_incident_ids = filtered_sanctions.map(function (i) {return i["IncidentID"];});
     for (var i = 0;i < filtered_incidents.length;i++) {
         var row = incident_table.insertRow(-1);
-        row.id = 
+        row.id = "incident_"+i;
         row.insertCell(0).innerHTML = "<a href=\"/incidents/view_incident?id="+incidents[i]["ID"]+"\">"+filtered_incidents[i]["ID"]+"</a>";
         row.insertCell(1).innerHTML = filtered_incidents[i]["Date"];
         var report_cell = row.insertCell(2);
