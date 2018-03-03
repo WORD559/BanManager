@@ -401,7 +401,7 @@ def student_query(request):
             else:
                 OR = True
             if like:
-                query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(user,underscore=False,percent=False),"AES":sql_sanitise(aes_key)})
+                query += "AES_DECRYPT(Username,'{AES}') LIKE '%{user}%'".format(**{"user":sql_sanitise(user),"AES":sql_sanitise(aes_key)})
             else:
                 query += "AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":sql_sanitise(user,underscore=False,percent=False),"AES":sql_sanitise(aes_key)})
         query+=")"
@@ -451,7 +451,7 @@ def add_new_incident(request):
     if not (request.form.has_key("report")):
         return json.dumps({"status":"BAD","error":"Missing report."})
     else:
-        report = sql_sanitise(str(request.form["report"]))
+        report = sql_sanitise(str(request.form["report"]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = datetime.date.today().strftime("%Y-%m-%d")
     else:
@@ -572,7 +572,7 @@ def add_new_sanction(request):
     if not (request.form.has_key("sanction")):
         return json.dumps({"status":"BAD","error":"Missing sanction."})
     else:
-        sanction = sql_sanitise(str(request.form["sanction"]))
+        sanction = sql_sanitise(str(request.form["sanction"]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = datetime.date.today().strftime("%Y-%m-%d")
     else:
@@ -737,11 +737,11 @@ def modify_user(request):
     if not (request.form.has_key("forename")):
         forename = None
     else:
-        forename = sql_sanitise(str(request.form["forename"]))
+        forename = sql_sanitise(str(request.form["forename"]),underscore=False,percent=False)
     if not (request.form.has_key("surname")):
         surname = None
     else:
-        surname = sql_sanitise(str(request.form["surname"]))
+        surname = sql_sanitise(str(request.form["surname"]),underscore=False,percent=False)
     if request.files.has_key("photo"):
         photo = request.files["photo"]
     else:
@@ -837,11 +837,11 @@ def modify_incident(request):
     if not (request.form.has_key("new_user")):
         new = None
     else:
-        new = sql_sanitise(str(request.form["new_user"])).lower()
+        new = sql_sanitise(str(request.form["new_user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("report")):
         report = None
     else:
-        report = sql_sanitise(str(request.form["report"]))
+        report = sql_sanitise(str(request.form["report"]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = None
     else:
@@ -907,7 +907,7 @@ def modify_sanction(request):
     if not (request.form.has_key("sanction")):
         sanction = None
     else:
-        sanction = sql_sanitise(str(request.form["sanction"]))
+        sanction = sql_sanitise(str(request.form["sanction"]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = None
     else:
