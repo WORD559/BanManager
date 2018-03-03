@@ -56,13 +56,12 @@ function get_usernames(data) {
             
             var user_p = document.createElement("p");
             user_p.setAttribute("class","sanctioned");
-            user_p.innerHTML = item["Username"];
             var sanction = sanctions[i];
             var max_length = 45
             if (sanction.length > max_length) {
-                user_p.innerHTML = item["Username"]+"<br>Sanction: "+sanction.substring(0,max_length)+"...";
+                user_p.innerHTML = '<a href="/students/view_student?username='+encodeURIComponent(item["Username"])+"\">"+item["Username"]+"</a><br>Sanction: "+sanction.substring(0,max_length)+"...";
             } else {
-                user_p.innerHTML = item["Username"]+"<br>Sanction: "+sanction;
+                user_p.innerHTML = '<a href="/students/view_student?username='+encodeURIComponent(item["Username"])+"\">"+item["Username"]+"</a><br>Sanction: "+sanction;
             }
             user_p.id = item["Username"]+"_p";
             
