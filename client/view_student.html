@@ -45,7 +45,7 @@ function render(data) {
     
     document.getElementById("incidents").innerHTML = (incidents.length-sanctions.length);
     
-    document.getElementById("student_username").innerHTML = student["Username"];
+    document.getElementById("new_user").innerHTML = student["Username"];
     
     var photo = document.createElement("img");
     photo.src = "/api/v1/photo?user="+encodeURIComponent(student["Username"]);
@@ -89,6 +89,29 @@ function render(data) {
     var loader = document.getElementById("ajax-loader");
     loader.parentNode.removeChild(loader);
 }
+function edit(row) {
+    var field = document.getElementById(row);
+    var button = document.getElementById(row+"_button");
+    field.innerHTML ='<input type="text" value="'+field.firstChild.nodeValue+'">';
+    button.innerHTML = '<button onclick="submit_edit(\''+row+'\');return false;">Submit</button>';
+}
+function submit_edit(row) {
+    function callback(rdata) {
+        var response = JSON.parse(rdata);
+        if (response["status"] == "OK") {
+            if (row != "new_user") {
+                location.reload();
+            } else {
+                window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"]);
+            }
+        }
+    }
+    var field = document.getElementById(row);
+    var data = {};
+    data[row] = field.firstChild.value;
+    data["user"] = student["Username"];
+    MakeAsyncRequest("POST","/api/v1/modify_student",callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_incidents);},false);
 </script>
 </head>
@@ -105,11 +128,11 @@ check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_
 <td>
 <table id="student_table">
 <tr>
-<td>Username:</td><td id="student_username"></td>
+<td>Username:</td><td id="new_user"></td><td id="new_user_button"><button onclick="edit('new_user'); return false;">Edit</button></td>
 </tr><tr>
-<td>Forename:</td><td id="forename"></td>
+<td>Forename:</td><td id="forename"></td><td id="forename_button"><button onclick="edit('forename'); return false;">Edit</button></td>
 </tr><tr>
-<td>Surname:</td><td id="surname"></td>
+<td>Surname:</td><td id="surname"></td><td id="surname_button"><button onclick="edit('surname'); return false;">Edit</button></td>
 </tr>
 </table>
 </tr>
