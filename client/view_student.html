@@ -48,7 +48,7 @@ function render(data) {
     document.getElementById("student_username").innerHTML = student["Username"];
     
     var photo = document.createElement("img");
-    photo.src = "/api/v1/photo?user="+student["Username"];
+    photo.src = "/api/v1/photo?user="+encodeURIComponent(student["Username"]);
     photo.setAttribute("class","small-photo");
     var photo_field = document.getElementById("photo");
     photo_field.insertBefore(photo,photo_field.firstChild);
