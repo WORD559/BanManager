@@ -71,15 +71,16 @@ function render(data) {
     var incident_ids = filtered_incidents.map(function (i) {return i["ID"];});
     var filtered_sanctions = sanctions.filter(function (i) {return (incident_ids.indexOf(i["IncidentID"]) != -1);});
     var sanction_incident_ids = filtered_sanctions.map(function (i) {return i["IncidentID"];});
-    console.log(filtered_incidents);
-    console.log(filtered_sanctions);
-    console.log(sanction_incident_ids);
     for (var i = 0;i < filtered_incidents.length;i++) {
         var row = incident_table.insertRow(-1);
+        row.id = 
         row.insertCell(0).innerHTML = "<a href=\"/incidents/view_incident?id="+incidents[i]["ID"]+"\">"+filtered_incidents[i]["ID"]+"</a>";
         row.insertCell(1).innerHTML = filtered_incidents[i]["Date"];
-        row.insertCell(2).innerHTML = filtered_incidents[i]["Report"];
+        var report_cell = row.insertCell(2);
+        report_cell.innerHTML = filtered_incidents[i]["Report"];
+        report_cell.setAttribute("class","long-column");
         var sanction_cell = row.insertCell(3);
+        sanction_cell.setAttribute("class","long-column");
         if (sanction_incident_ids.indexOf(filtered_incidents[i]["ID"]) != -1) {
             sanction_cell.innerHTML = sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])]["Sanction"];
         }
