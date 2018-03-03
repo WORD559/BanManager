@@ -22,7 +22,7 @@ function get_students(data) {
 }
 function render_table(data) {
     var response = JSON.parse(data);
-    students = response["data"].sort(function (student) {return student["Username"].charCodeAt(0);});
+    students = response["data"].sort(function (student1,student2) {return student1["Username"].charCodeAt(0)-student2["Username"].charCodeAt(0);});
     
     var unresolved_incidents = document.getElementById("incidents");
     unresolved_incidents.innerHTML = (incidents.length - sanctions.length);
@@ -50,7 +50,7 @@ function render_table(data) {
     
     var incident_students = incidents.map(function (incident) {return incident["Username"];});
     var sanction_incidents = sanctions.map(function (sanction) {return sanction["IncidentID"];});
-    var filtered_incidents = incidents.filter(function (incident) {console.log(incident["ID"]);return (sanction_incidents.indexOf(incident["ID"]) != -1);});
+    var filtered_incidents = incidents.filter(function (incident) {return (sanction_incidents.indexOf(incident["ID"]) != -1);});
     
     for (var i=0;i < students.length;i++) {
         var row = set_cells(table,students[i],i);
