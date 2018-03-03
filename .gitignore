@@ -110,3 +110,4 @@ venv.bak/
 config/*
 !config/defaults.cnf
 photos/*
+!photos/DELETEME
