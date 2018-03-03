@@ -1,0 +1,64 @@
+<html>
+<head>
+<title>Incident|BanManager</title>
+<link rel="icon" href="/banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="/default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+function check_rank() {
+    var output = document.getElementById("student_form");
+    if (user_rank > 2) {
+        output.innerHTML = "<p>You do not have permission to add new students. <a href=\"/dash\">Return to the dashboard</a></p>";
+        return;
+    }
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+function submit_student() {
+    var button = document.getElementById("submit_button");
+    SetAjaxLoader(button);
+    var f = document.getElementById("student");
+    var data = {"user":f.elements["user"].value,
+                "forename":f.elements["forename"].value,
+                "surname":f.elements["surname"].value};
+    MakeAsyncRequest("POST","/api/v1/add_new_student",student_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
+function student_callback(data) {
+    var response = JSON.parse(data);
+    var f = document.getElementById("student");
+    var status_note = document.getElementById("status_note");
+    if (response["status"] == "OK") {
+        f.parentNode.removeChild(f);
+        status_note.innerHTML = "Added!";
+        window.location = "/students";
+    } else {
+        UnsetAjaxLoader("submit_button","Submit",submit_student);
+        status_note.innerHTML = response["error"];
+    }
+}
+check_logged_in(check_rank);
+</script>
+</head>
+
+<body>
+<img id="ajax-loader" src="/ajax-loader.gif"/>
+
+<script type="text/javascript" src="/menubar.js"></script>
+
+<div id="student_form">
+<p>Add a new student</p>
+<form id="student" action="">
+<table>
+<tr><td>Username:</td><td><input name="user" type="text"></td></tr>
+<tr><td>Forename:</td><td><input name="forename" type="text"></td></tr>
+<tr><td>Surname:</td><td><input name="surname" type="text"></td></tr>
+</table>
+<input id="submit_button" type="submit" value="Submit" onclick="submit_student(); return false;">
+<p id="status_note"></p>
+</form>
+</div>
+
+</body>
+</html>
