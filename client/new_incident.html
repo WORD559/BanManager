@@ -42,13 +42,12 @@ function get_students(data) {
     loader.parentNode.removeChild(loader);
 }
 function submit_incident() {
+    var button = document.getElementById("submit_button");
+    SetAjaxLoader(button);
     var f = document.getElementById("incident");
     var data = {"user":f.elements["user"].value,
                 "date":f.elements["date"].value,
                 "report":f.elements["report"].value};
-    console.log(data);
-    var button = document.getElementById("submit_button");
-    SetAjaxLoader(button);
     MakeAsyncRequest("POST","/api/v1/add_new_incident",incident_callback,encodeFormData(data),"application/x-www-form-urlencoded");
 }
 function incident_callback(data) {
