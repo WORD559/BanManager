@@ -784,17 +784,28 @@ def modify_user(request):
     # Otherwise, this is a modify request, so use UPDATE
     else:
         columns = []
-        if new:
-            columns.append("Username = AES_ENCRYPT('{new}','{AES}')".format(**{"new":new,"AES":aes_key}))
         if forename:
             columns.append("Forename = AES_ENCRYPT('{forename}','{AES}')".format(**{"forename":forename,"AES":aes_key}))
         if surname:
             columns.append("Surname = AES_ENCRYPT('{surname}','{AES}')".format(**{"surname":surname,"AES":aes_key}))
+        if new:
+            columns.append("Username = AES_ENCRYPT('{new}','{AES}')".format(**{"new":new,"AES":aes_key}))
         if len(columns) > 0:
-            query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}'".format(**{"user":student,"AES":aes_key})
             db = connect_db()
             cur = db.cursor()
-            cur.execute(query)
+            if new:
+                # We need to disable foreign key checks in order to modify the username, since it is a foreign key in incidents
+                cur.execute("SET foreign_key_checks = 0;")
+                query = "UPDATE Incidents SET Username = AES_ENCRYPT('{new}','{AES}') WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"new":new,"user":student,"AES":aes_key})
+                cur.execute(query)
+                db.commit()
+                query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key})
+                cur.execute(query)
+                db.commit()
+                cur.execute("SET foreign_key_checks = 1;")
+            else:
+                query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key})
+                cur.execute(query)
             db.commit()
             cur.close()
             db.close()
@@ -1194,5 +1205,6 @@ client.add_route("incidents/view_incident","client/view_incident.html")
 client.add_route("incidents/add_incident","client/new_incident.html")
 client.add_route("students","client/students.html")
 client.add_route("students/view_student","client/view_student.html")
+client.add_route("students/add_student","client/new_student.html")
 
 client.start()
