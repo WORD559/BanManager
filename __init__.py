@@ -1207,5 +1207,6 @@ client.add_route("incidents/add_incident","client/new_incident.html")
 client.add_route("students","client/students.html")
 client.add_route("students/view_student","client/view_student.html")
 client.add_route("students/add_student","client/new_student.html")
+client.add_route("account","client/account.html")
 
 client.start()
