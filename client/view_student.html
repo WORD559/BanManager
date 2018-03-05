@@ -47,8 +47,10 @@ function render(data) {
     
     document.getElementById("new_user").innerHTML = student["Username"];
     
+    // We need a timestamp so we can prevent caching
+    var timestamp = encodeURIComponent((new Date()).getTime());
     var photo = document.createElement("img");
-    photo.src = "/api/v1/photo?user="+encodeURIComponent(student["Username"]);
+    photo.src = "/api/v1/photo?_="+timestamp+"&user="+encodeURIComponent(student["Username"]);
     photo.setAttribute("class","small-photo");
     var photo_field = document.getElementById("photo");
     photo_field.insertBefore(photo,photo_field.firstChild);
@@ -65,6 +67,14 @@ function render(data) {
     } else {
         surname.innerHTML = student["Surname"];
     }
+    // Add edit buttons
+    if (user_rank <= 2) {
+        document.getElementById("new_user_button").innerHTML = "<button onclick=\"edit('new_user'); return false;\">Edit</button>";
+        document.getElementById("forename_button").innerHTML = "<button onclick=\"edit('forename'); return false;\">Edit</button>";
+        document.getElementById("surname_button").innerHTML = "<button onclick=\"edit('surname'); return false;\">Edit</button>";
+        document.getElementById("photo_button").innerHTML = "<button onclick=\"edit_photo(); return false;\">Change Photo</button>";
+    }
+    
     
     var incident_table = document.getElementById("incidents_table");
     var filtered_incidents = incidents.filter(function (i) {return (i["Username"] == student["Username"]);});
@@ -112,6 +122,26 @@ function submit_edit(row) {
     data["user"] = student["Username"];
     MakeAsyncRequest("POST","/api/v1/modify_student",callback,encodeFormData(data),"application/x-www-form-urlencoded");
 }
+function edit_photo() {
+    var field = document.getElementById("photo_button");
+    field.innerHTML = "<input type=\"file\" accept=\"image/*\"><br><button onclick=\"submit_photo(); return false;\">Submit</button>";
+}
+function submit_photo() {
+    function callback(data) {
+        var response = JSON.parse(data);
+        if (response["status"] == "OK") {
+            location.reload();
+        }
+    }
+    var input = document.getElementById("photo_button").firstChild;
+    if (input.files.length == 0) {
+        return;
+    }
+    var data = new FormData();
+    data.append("photo",input.files[0]);
+    data.append("user",student["Username"]);
+    MakeAsyncRequest("POST","/api/v1/modify_student",callback,data,null);
+}
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_incidents);},false);
 </script>
 </head>
@@ -124,15 +154,15 @@ check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_
 <div id="student_info">
 <table id="student+photo">
 <tr>
-<td id="photo"><p>Hover over photo to enlarge</p></td>
+<td id="photo"><p>Hover over photo to enlarge</p><p id="photo_button"></p></td>
 <td>
 <table id="student_table">
 <tr>
-<td>Username:</td><td id="new_user"></td><td id="new_user_button"><button onclick="edit('new_user'); return false;">Edit</button></td>
+<td>Username:</td><td id="new_user"></td><td id="new_user_button"></td>
 </tr><tr>
-<td>Forename:</td><td id="forename"></td><td id="forename_button"><button onclick="edit('forename'); return false;">Edit</button></td>
+<td>Forename:</td><td id="forename"></td><td id="forename_button"></td>
 </tr><tr>
-<td>Surname:</td><td id="surname"></td><td id="surname_button"><button onclick="edit('surname'); return false;">Edit</button></td>
+<td>Surname:</td><td id="surname"></td><td id="surname_button"></td>
 </tr>
 </table>
 </tr>
