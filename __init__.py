@@ -149,8 +149,7 @@ def initialise(request):
                     "Salt BINARY(8) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
-                    "AccountType INTEGER NOT NULL,"+\
-                    "Email VARCHAR(254));")
+                    "AccountType INTEGER NOT NULL;")
         #TEXT is used as these fields exceed 255 chars
         #The hash can be stored efficiently in a BINARY field
         #The private key is best stored in a BLOB. This allows the AES-enrypted private key to be stored as a binary object so as to be space-efficient. Also very compatible with the AES_ENCRYPT function of MySQL
