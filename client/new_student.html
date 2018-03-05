@@ -11,6 +11,8 @@ function check_rank() {
     var output = document.getElementById("student_form");
     if (user_rank > 2) {
         output.innerHTML = "<p>You do not have permission to add new students. <a href=\"/dash\">Return to the dashboard</a></p>";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
         return;
     }
     var loader = document.getElementById("ajax-loader");
