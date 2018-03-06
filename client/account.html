@@ -81,9 +81,12 @@ function delete_account() {
                 status_note.innerHTML = "Deleted '"+data["user"]+"'.";
             }
         } else {
+            UnsetAjaxLoader("delete_account_button","Delete Account",delete_account);
             status_note.innerHTML = response["error"];
         }
     }
+    var button = document.getElementById("delete_account_button");
+    SetAjaxLoader(button);
     var username = document.getElementById("username").innerHTML;
     var form = document.getElementById("delete_account");
     data = {"pass":form.elements["pass"].value};
@@ -132,7 +135,7 @@ check_logged_in(fill_properties);
 <p>Delete Account</p>
 <table id="delete_table">
 <tr><td>Password:</td><td id="delete_password"><input type="password" name="pass"></td></tr>
-<tr><td><input type="submit" value="Delete Account" onclick="delete_account(); return false;"></td></tr>
+<tr><td><input id="delete_account_button" type="submit" value="Delete Account" onclick="delete_account(); return false;"></td></tr>
 </table>
 <p id="status_note_2"></p>
 </form>
