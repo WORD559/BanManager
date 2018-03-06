@@ -233,7 +233,7 @@ def encrypt_image(im,path,chunksize=32*1024):
             while data != "":
                 output.write(aes.encrypt(data))
                 data = temp.read(chunksize)
-    print key.encode("hex")
+##    print key.encode("hex")
     return key
     # Now it should be giggity good.
         
