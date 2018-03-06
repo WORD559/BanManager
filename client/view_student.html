@@ -78,9 +78,13 @@ function render(data) {
     
     var incident_table = document.getElementById("incidents_table");
     var filtered_incidents = incidents.filter(function (i) {return (i["Username"] == student["Username"]);});
+    console.log(filtered_incidents);
     var incident_ids = filtered_incidents.map(function (i) {return i["ID"];});
+    console.log(incident_ids);
     var filtered_sanctions = sanctions.filter(function (i) {return (incident_ids.indexOf(i["IncidentID"]) != -1);});
+    console.log(filtered_sanctions);
     var sanction_incident_ids = filtered_sanctions.map(function (i) {return i["IncidentID"];});
+    console.log(sanction_incident_ids);
     for (var i = 0;i < filtered_incidents.length;i++) {
         var row = incident_table.insertRow(-1);
         row.id = "incident_"+i;
@@ -94,7 +98,7 @@ function render(data) {
         var sanction_end = row.insertCell(5);
         sanction_cell.setAttribute("class","long-column");
         if (sanction_incident_ids.indexOf(filtered_incidents[i]["ID"]) != -1) {
-            var current_sanction = sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])];
+            var current_sanction = filtered_sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])];
             sanction_cell.innerHTML = current_sanction["Sanction"];
             sanction_start.innerHTML = current_sanction["StartDate"];
             sanction_end.innerHTML = current_sanction["EndDate"];
