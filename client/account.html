@@ -7,7 +7,58 @@
 <script type="text/javascript" src="/makeasync.js"></script>
 <script type="text/javascript" src="/banman.js"></script>
 <script>
-check_logged_in(function () {return;});
+function fill_properties() {
+    document.getElementById("current_user").innerHTML = document.getElementById("username").innerHTML;
+    var rank_text = document.getElementById("rank_text");
+    if (user_rank <= 2) {
+        rank_text.innerHTML = ["Administrator (0)","Teacher (1)","Prefect (2)"][user_rank];
+    } else {
+        rank_text.innerHTML = "Read-only ("+user_rank+")";
+    }
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+function change_password() {
+    var button = document.getElementById("change_password_button");
+    SetAjaxLoader(button);
+    var form = document.getElementById("change_password");
+    var status_note = document.getElementById("status_note");
+    var current = form.elements["current"].value;
+    var new1 = form.elements["new1"].value;
+    var new2 = form.elements["new2"].value;
+    if (current == "") {
+        status_note.innerHTML = "Missing current password!";
+        UnsetAjaxLoader("change_password_button","Change Password",change_password);
+        return;
+    }
+    if (new1 == "") {
+        status_note.innerHTML = "Missing new password!";
+        UnsetAjaxLoader("change_password_button","Change Password",change_password);
+        return;
+    }
+    if (new1 != new2) {
+        status_note.innerHTML = "New passwords do not match!";
+        UnsetAjaxLoader("change_password_button","Change Password",change_password);
+        return;
+    }
+    var data = {"pass":current,
+                "new":new1};
+    MakeAsyncRequest("POST","/api/v1/change_password",password_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
+function password_callback(data) {
+    var response = JSON.parse(data);
+    var form = document.getElementById("change_password");
+    var status_note = document.getElementById("status_note");
+    if (response["status"] == "OK") {
+        form.parentNode.removeChild(form);
+        status_note.innerHTML = "Changed!";
+        window.location = "/login";
+    } else {
+        UnsetAjaxLoader("change_password_button","Change Password",change_password);
+        status_note.innerHTML = response["error"];
+    }
+}
+check_logged_in(fill_properties);
 </script>
 </head>
 
@@ -15,6 +66,30 @@ check_logged_in(function () {return;});
 <img id="ajax-loader" src="/ajax-loader.gif"/>
 
 <script type="text/javascript" src="/menubar.js"></script>
+
+<p>My Account</p>
+<table>
+<tr>
+<td>Username:</td><td id="current_user"></td>
+</tr><tr>
+<td>Rank:</td><td id="rank_text"></td>
+</tr>
+</table>
+<form id="change_password" action="">
+<table>
+<tr>
+<td>Current Password:</td><td><input type="password" name="current"></td>
+</tr><tr>
+<td>New Password:</td><td><input type="password" name="new1"></td>
+</tr><tr>
+<td>Confirm New Password:</td><td><input type="password" name="new2"></td>
+</tr>
+<tr>
+<td><input id="change_password_button" value="Change Password" type="submit" onclick="change_password(); return false;"></td>
+</tr>   
+</table>
+</form>
+<p id="status_note"></p>
 
 </body>
 </html>
