@@ -23,6 +23,8 @@ from Crypto.Cipher import AES
 # Once the package is installed, the FLASK_APP environment varibale just needs to be set to BanManager, and then `flask run` can be used to start the system
 app = Flask(__name__)
 CORS(app)
+app.config["SESSION_COOKIE_SECURE"] = True
+
 ##app = apiframework.app
 api = apiframework.API(app)
 
