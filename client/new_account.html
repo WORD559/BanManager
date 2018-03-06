@@ -1,0 +1,73 @@
+<html>
+<head>
+<title>New Account|BanManager</title>
+<link rel="icon" href="/banman.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
+<link rel="stylesheet" type="text/css" href="/default.css">
+<script type="text/javascript" src="/makeasync.js"></script>
+<script type="text/javascript" src="/banman.js"></script>
+<script>
+function check_rank() {
+    var output = document.getElementById("account_form");
+    if (user_rank > 0) {
+        output.innerHTML = "<p>You do not have permission to submit new incidents. <a href=\"/dash\">Return to the dashboard</a></p>";
+        return;
+    }
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+}
+function add_account() {
+    var button = document.getElementById("submit_button");
+    SetAjaxLoader(button);
+    var form = document.getElementById("account");
+    data = {"user":form.elements["user"].value,
+            "pass":form.elements["pass"].value,
+            "rank":form.elements["rank"].value};
+    MakeAsyncRequest("POST","/api/v1/add_new_account",new_account_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
+function new_account_callback(data) {
+    var response = JSON.parse(data);
+    var form = document.getElementById("account");
+    var status_note = document.getElementById("status_note");
+    if (response["status"] == "OK") {
+        form.parentNode.removeChild(form);
+        status_note.innerHTML = "Created account!";
+        location.reload();
+    } else {
+        status_note.innerHTML = response["error"];
+        UnsetAjaxLoader("submit_button","Submit",add_account);
+    }
+}
+check_logged_in(check_rank);
+</script>
+</head>
+
+<body>
+<img src="/ajax-loader.gif" id="ajax-loader"/>
+
+<script type="text/javascript" src="/menubar.js"></script>
+
+<div id="account_form">
+<p>Add a new account</p>
+<form id="account" action="">
+<table class="horizontal-table">
+<tr>
+<td>Username:</td><td><input type="text" name="user"></td>
+</tr><tr>
+<td>Password:</td><td><input type="password" name="pass"></td>
+</tr><tr>
+<td>Rank:</td><td>
+<select name="rank">
+<option value=0>Admin (0)</option>
+<option value=1>Teacher (1)</option>
+<option value=2>Prefect (2)</option>
+<option value=3>Read-Only (3)</option>
+</select></td>
+</tr>
+</table>
+<input id="submit_button" type="submit" value="Submit" onclick="add_account(); return false;">
+</form>
+<p id="status_note"></p>
+</div>
+</body>
+</html>
