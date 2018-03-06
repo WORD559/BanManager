@@ -18,7 +18,7 @@ function check_rank() {
 }
 function get_students(data) {
     response = JSON.parse(data);
-    students = response["data"].sort(function (student) {return student["Username"].charCodeAt(0);});
+    students = response["data"].sort(function (student1,student2) {return student1["Username"].charCodeAt(0)-student2["Username"].charCodeAt(0);});
     var today = new Date();
     var date = document.getElementById("date_input");
     var day = today.getDate();
