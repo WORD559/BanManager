@@ -90,9 +90,14 @@ function render(data) {
         report_cell.innerHTML = filtered_incidents[i]["Report"];
         report_cell.setAttribute("class","long-column");
         var sanction_cell = row.insertCell(3);
+        var sanction_start = row.insertCell(4);
+        var sanction_end = row.insertCell(5);
         sanction_cell.setAttribute("class","long-column");
         if (sanction_incident_ids.indexOf(filtered_incidents[i]["ID"]) != -1) {
-            sanction_cell.innerHTML = sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])]["Sanction"];
+            var current_sanction = sanctions[sanction_incident_ids.indexOf(filtered_incidents[i]["ID"])];
+            sanction_cell.innerHTML = current_sanction["Sanction"];
+            sanction_start.innerHTML = current_sanction["StartDate"];
+            sanction_end.innerHTML = current_sanction["EndDate"];
         }
     }
     
@@ -176,6 +181,8 @@ check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_
 <th>Date</th>
 <th>Report</th>
 <th>Sanction</th>
+<th>Start Date</th>
+<th>End Date</th>
 </tr>
 </table>
 </div>

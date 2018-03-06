@@ -80,14 +80,18 @@ function sort_and_render(data) {
         // add the row to the table
         var row = set_basics(table,incidents[i],sanction,i);
         
-        // make a new cell for our sanction text
+        // make a new cell for our sanction text, sanction start, and sanction end
         var sanction_text = row.insertCell(4);
+        var sanction_start = row.insertCell(5);
+        var sanction_end = row.insertCell(6);
         
         // If there is actually a sanction...
         if (sanction != -1) {
             // add it
             sanction_text.innerHTML = "<p>"+sanctions[sanction]["Sanction"]+"</p>";
             sanction_text.setAttribute("class","long-column");
+            sanction_start.innerHTML = "<p>"+sanctions[sanction]["StartDate"]+"</p>";
+            sanction_end.innerHTML = "<p>"+sanctions[sanction]["EndDate"]+"</p>";
         } else {
             // otherwise, add it to the unsanctioned table with an _unsanc id
             set_basics(unsanctioned,incidents[i],sanction,i,true);
@@ -178,6 +182,8 @@ check_logged_in(get_incidents,false);
 <th>Date</th>
 <th>Report</th>
 <th>Sanction</th>
+<th>Start Date</th>
+<th>End Date</th>
 <th>Delete</th>
 </tr>
 </table>
