@@ -1,4 +1,5 @@
 var user_rank;
+var can_delete_account;
 function check_logged_in(f,fetch_incidents=true) { 
     function login_callback(data) {
         var response = JSON.parse(data);
@@ -11,6 +12,11 @@ function check_logged_in(f,fetch_incidents=true) {
             get_unresolved_incidents_count(document.getElementById("incidents"));
         }
         user_rank = response["data"]["rank"];
+        if (user_rank == 0 || response["data"]["account_deletion"]) {
+            can_delete_account = true;
+        } else {
+            can_delete_account = false;
+        }
         f();
     }
     MakeAsyncRequest("GET","/api/v1/status",login_callback);

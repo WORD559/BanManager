@@ -52,6 +52,7 @@ def status(request):
         data["logged_in"] = False
         data["user"] = None
         data["rank"] = None
+    data["account_deletion"] = bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))
     return json.dumps({"status":"OK","data":data})
 
 # Requires an administrative user and password for the SQL server

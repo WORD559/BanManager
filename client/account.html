@@ -15,6 +15,17 @@ function fill_properties() {
     } else {
         rank_text.innerHTML = "Read-only ("+user_rank+")";
     }
+    if (!(can_delete_account)) {
+        var table = document.getElementById("delete_account");
+        table.parentNode.removeChild(table);
+    }
+    if (user_rank == 0) {
+        document.getElementById("delete_password").innerHTML += " (not required for deleting other users)";
+        var row = document.getElementById("delete_table").insertRow(0);
+        row.insertCell(0).innerHTML = "Username:";
+        var to_delete = row.insertCell(1);
+        to_delete.innerHTML = "<input type=\"text\" name=\"user\" value=\""+document.getElementById("current_user").innerHTML+"\">";
+    }
     var loader = document.getElementById("ajax-loader");
     loader.parentNode.removeChild(loader);
 }
@@ -58,6 +69,32 @@ function password_callback(data) {
         status_note.innerHTML = response["error"];
     }
 }
+function delete_account() {
+    function delete_callback(rdata) {
+        var response = JSON.parse(rdata);
+        var form = document.getElementById("delete_account");
+        var status_note = document.getElementById("status_note_2");
+        if (response["status"] == "OK") {
+            if (data["user"] == username) {
+                window.location = "/login";
+            } else {
+                status_note.innerHTML = "Deleted '"+data["user"]+"'.";
+            }
+        } else {
+            status_note.innerHTML = response["error"];
+        }
+    }
+    var username = document.getElementById("username").innerHTML;
+    var form = document.getElementById("delete_account");
+    data = {"pass":form.elements["pass"].value};
+    if (user_rank > 0) {
+        data["user"] = username;
+    } else {
+        data["user"] = form.elements["user"].value;
+    }
+    MakeAsyncRequest("POST","/api/v1/delete_account",delete_callback,encodeFormData(data),"application/x-www-form-urlencoded");
+}
+
 check_logged_in(fill_properties);
 </script>
 </head>
@@ -76,6 +113,7 @@ check_logged_in(fill_properties);
 </tr>
 </table>
 <form id="change_password" action="">
+<p>Change Password</p>
 <table>
 <tr>
 <td>Current Password:</td><td><input type="password" name="current"></td>
@@ -86,10 +124,17 @@ check_logged_in(fill_properties);
 </tr>
 <tr>
 <td><input id="change_password_button" value="Change Password" type="submit" onclick="change_password(); return false;"></td>
-</tr>   
+</tr>
 </table>
-</form>
 <p id="status_note"></p>
-
+</form>
+<form id="delete_account" action="">
+<p>Delete Account</p>
+<table id="delete_table">
+<tr><td>Password:</td><td id="delete_password"><input type="password" name="pass"></td></tr>
+<tr><td><input type="submit" value="Delete Account" onclick="delete_account(); return false;"></td></tr>
+</table>
+<p id="status_note_2"></p>
+</form>
 </body>
 </html>
