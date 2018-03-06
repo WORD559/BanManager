@@ -176,7 +176,7 @@ def get_photoID(student,aes_key,cur):
     return photoID
 
 def upload_file(f,ID,db,cur):
-    if not (f.filename.split(".")[-1].lower() in ["png","jpg","gif"]):
+    if not (f.filename.split(".")[-1].lower() in ["png","jpg","jpeg","gif","bmp","tiff"]):
         return False
     upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
     # Secure name is semi-redundant because of ID, but I want to be safe from stupitidy and dodgy file extensions
