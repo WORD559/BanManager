@@ -111,3 +111,6 @@ config/*
 !config/defaults.cnf
 photos/*
 !photos/DELETEME
+
+certificate.crt
+certkey.key

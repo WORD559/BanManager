@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ] ; then
+    echo "Usage: `basename $0` [-h --help] <certfile_path> <keyfile_path> [hostname] [port]"
+    exit 0
+fi
+if [ "$3" == "" ] ; then
+    G_HOSTNAME="0.0.0.0"
+else
+    G_HOSTNAME=$3
+fi
+if [ "$4" == "" ] ; then
+    G_PORT="443"
+else
+    G_PORT=$4
+fi
+
+PYTHONPATH=.. FLASK_APP=BanManager gunicorn --certfile $1 --keyfile $2 -b $G_HOSTNAME:$G_PORT BanManager:app
