@@ -45,16 +45,17 @@ def status(request):
         data["initialised"] = False
     else:
         data["initialised"] = True
-    try:
-        get_private_key(request) # This will let me check to see if they're logged in
-        data["logged_in"] = True
-        data["user"] = get_username(request)
-        data["rank"] = get_rank(data["user"])
-    except AuthenticationError:
-        data["logged_in"] = False
-        data["user"] = None
-        data["rank"] = None
-    data["account_deletion"] = bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))
+        data["account_deletion"] = bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))
+
+        try:
+            get_private_key(request) # This will let me check to see if they're logged in
+            data["logged_in"] = True
+            data["user"] = get_username(request)
+            data["rank"] = get_rank(data["user"])
+        except AuthenticationError:
+            data["logged_in"] = False
+            data["user"] = None
+            data["rank"] = None
     return json.dumps({"status":"OK","data":data})
 
 # Requires an administrative user and password for the SQL server
@@ -77,12 +78,12 @@ def initialise(request):
         if not (request.form.has_key("user") and request.form.has_key("pass")):
             return json.dumps({"status":"BAD","error":"Missing username and/or password."})
         else:
-            user = request.form["user"]
-            passwd = request.form["pass"]
+            user = uni_encode_arg(request.form["user"])
+            passwd = uni_encode_arg(request.form["pass"])
         if not (request.form.has_key("host")):
             hostname = "localhost"
         else:
-            hostname = request.form["host"]
+            hostname = uni_encode_arg(request.form["host"])
     except Exception,e:
         raise ConfigError
     try:
@@ -152,7 +153,7 @@ def initialise(request):
                     "Salt BINARY(8) NOT NULL,"+\
                     "PublicKey TEXT NOT NULL,"+\
                     "PrivateKey BLOB NOT NULL,"+\
-                    "AccountType INTEGER NOT NULL;")
+                    "AccountType INTEGER NOT NULL);")
         #TEXT is used as these fields exceed 255 chars
         #The hash can be stored efficiently in a BINARY field
         #The private key is best stored in a BLOB. This allows the AES-enrypted private key to be stored as a binary object so as to be space-efficient. Also very compatible with the AES_ENCRYPT function of MySQL

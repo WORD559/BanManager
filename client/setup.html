@@ -9,9 +9,9 @@ function setup_db() {
     var button = document.getElementById("submit_button");
     var form = button.parentNode;
     SetAjaxLoader(button);
-    var data = encodeFormData({user,form.elements["user"].value,
-                               pass,form.elements["pass"].value,
-                               host,form.elements["host"].value});
+    var data = encodeFormData({user:form.elements["user"].value,
+                               pass:form.elements["pass"].value,
+                               host:form.elements["host"].value});
     MakeAsyncRequest("POST","/api/v1/init",setup_callback,data,"application/x-www-form-urlencoded");
 }
 function setup_callback(data) {
