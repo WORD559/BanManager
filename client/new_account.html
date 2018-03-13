@@ -9,11 +9,13 @@
 <script>
 function check_rank() {
     var output = document.getElementById("account_form");
+    var loader = document.getElementById("ajax-loader");
     if (user_rank > 0) {
-        output.innerHTML = "<p>You do not have permission to submit new incidents. <a href=\"/dash\">Return to the dashboard</a></p>";
+        output.innerHTML = "<p>You do not have permission to add new accounts. <a href=\"/dash\">Return to the dashboard</a></p>";
+        loader.parentNode.removeChild(loader);
         return;
     }
-    var loader = document.getElementById("ajax-loader");
+    
     loader.parentNode.removeChild(loader);
 }
 function add_account() {
