@@ -20,3 +20,6 @@ class RankError(Exception):
 
 class PhotoError(Exception):
     pass
+
+class InvalidInputError(Exception):
+    pass

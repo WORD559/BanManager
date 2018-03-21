@@ -68,6 +68,8 @@ class API(object):
                 except PhotoError:
                     return send_from_directory(self.app.root_path,"user.jpg",
                                                mimetype="image/jpeg")
+                except InvalidInputError:
+                    return json.dumps({"status":"BAD","error":"There are invalid characters in your input. Please try again."})
 
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):

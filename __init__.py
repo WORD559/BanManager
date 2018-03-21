@@ -13,6 +13,7 @@ import configman
 import string
 import random
 import datetime
+import re
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES
@@ -299,12 +300,21 @@ def add_new_student(request):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
         student = uni_encode_arg(request.form["user"].lower()).replace(" ","_")
+        # Ensure there are no symbols except dashes and underscores
+        if not re.match("^[A-Za-z0-9_-]*$",student):
+            raise InvalidInputError
     if request.form.has_key("forename"):
         forename = uni_encode_arg(request.form["forename"])
+        # Ensure there are no symbols except dashes
+        if not re.match("^[A-Za-z0-9-]*$",forename):
+            raise InvalidInputError
     else:
         forename = None
     if request.form.has_key("surname"):
         surname = uni_encode_arg(request.form["surname"])
+        # Ensure there are no symbols except dashes
+        if not re.match("^[A-Za-z0-9-]*$",surname):
+            raise InvalidInputError
     else:
         surname = None
     if request.files.has_key("photo"):
@@ -459,6 +469,9 @@ def add_new_incident(request):
     if not (request.form.has_key("date")):
         date = datetime.date.today().strftime("%Y-%m-%d")
     else:
+        # Ensure the format is correct
+        if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["date"]):
+            raise InvalidInputError
         date = sql_sanitise(uni_encode_arg(request.form["date"]))
 
     # Get the private key
@@ -493,8 +506,14 @@ def incident_query(request):
         if request.args.has_key("user"):
             Filter["user"] = uni_encode_arg(request.args["user"]).lower()
         if request.args.has_key("before"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["before"]):
+                raise InvalidInputError
             Filter["before"] = uni_encode_arg(request.args["before"])
         if request.args.has_key("after"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["after"]):
+                raise InvalidInputError
             Filter["after"] = uni_encode_arg(request.args["after"])
         if request.args.has_key("id"):
             Filter["id"] = uni_encode_arg(request.args["id"]).split(" ")
@@ -580,10 +599,16 @@ def add_new_sanction(request):
     if not (request.form.has_key("start_date")):
         start_date = datetime.date.today().strftime("%Y-%m-%d")
     else:
+        # Ensure the format is correct
+        if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["start_date"]):
+            raise InvalidInputError
         start_date = sql_sanitise(uni_encode_arg(request.form["start_date"]))
     if not (request.form.has_key("end_date")):
         return json.dumps({"status":"BAD","error":"Missing end date."})
     else:
+        # Ensure the format is correct
+        if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["end_date"]):
+            raise InvalidInputError
         end_date = sql_sanitise(uni_encode_arg(request.form["end_date"]))
 
     # Get the private key
@@ -618,12 +643,24 @@ def sanction_query(request):
         if request.args.has_key("incident"):
             Filter["incident"] = [int(i) for i in uni_encode_arg(request.args["incident"]).split(" ")]
         if request.args.has_key("starts_before"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["starts_before"]):
+                raise InvalidInputError
             Filter["starts_before"] = uni_encode_arg(request.args["starts_before"])
         if request.args.has_key("starts_after"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["starts_after"]):
+                raise InvalidInputError
             Filter["starts_after"] = uni_encode_arg(request.args["starts_after"])
         if request.args.has_key("ends_before"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["ends_before"]):
+                raise InvalidInputError
             Filter["ends_before"] = uni_encode_arg(request.args["ends_before"])
         if request.args.has_key("ends_after"):
+            # Ensure the format is correct
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["ends_after"]):
+                raise InvalidInputError
             Filter["ends_after"] = uni_encode_arg(request.args["ends_after"])
         if request.args.has_key("id"):
             Filter["id"] = [int(i) for i in uni_encode_arg(request.args["id"]).split(" ")]
@@ -737,14 +774,23 @@ def modify_user(request):
     if not (request.form.has_key("new_user")):
         new = None
     else:
+        # Ensure there are no symbols except dashes and underscores
+        if not re.match("^[A-Za-z0-9_-]*$",request.form["new_user"]):
+            raise InvalidInputError
         new = sql_sanitise(uni_encode_arg(request.form["new_user"]),underscore=False,percent=False).lower()
     if not (request.form.has_key("forename")):
         forename = None
     else:
+        # Ensure there are no symbols except dashes
+        if not re.match("^[A-Za-z0-9-]*$",request.form["forename"]):
+            raise InvalidInputError
         forename = sql_sanitise(uni_encode_arg(request.form["forename"]),underscore=False,percent=False)
     if not (request.form.has_key("surname")):
         surname = None
     else:
+        # Ensure there are no symbols except dashes
+        if not re.match("^[A-Za-z0-9-]*$",request.form["surname"]):
+            raise InvalidInputError
         surname = sql_sanitise(uni_encode_arg(request.form["surname"]),underscore=False,percent=False)
     if request.files.has_key("photo"):
         photo = request.files["photo"]
@@ -1050,6 +1096,9 @@ def create_account(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
+        # Ensure there are no symbols except dashes and underscores
+        if not re.match("^[A-Za-z0-9_-]*$",request.form["user"]):
+            raise InvalidInputError
         username = uni_encode_arg(request.form["user"])
     if not (request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing password."})
