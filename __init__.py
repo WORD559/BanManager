@@ -507,12 +507,12 @@ def incident_query(request):
             Filter["user"] = uni_encode_arg(request.args["user"]).lower()
         if request.args.has_key("before"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["before"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["before"]):
                 raise InvalidInputError
             Filter["before"] = uni_encode_arg(request.args["before"])
         if request.args.has_key("after"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["after"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["after"]):
                 raise InvalidInputError
             Filter["after"] = uni_encode_arg(request.args["after"])
         if request.args.has_key("id"):
@@ -644,22 +644,22 @@ def sanction_query(request):
             Filter["incident"] = [int(i) for i in uni_encode_arg(request.args["incident"]).split(" ")]
         if request.args.has_key("starts_before"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["starts_before"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["starts_before"]):
                 raise InvalidInputError
             Filter["starts_before"] = uni_encode_arg(request.args["starts_before"])
         if request.args.has_key("starts_after"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["starts_after"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["starts_after"]):
                 raise InvalidInputError
             Filter["starts_after"] = uni_encode_arg(request.args["starts_after"])
         if request.args.has_key("ends_before"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["ends_before"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["ends_before"]):
                 raise InvalidInputError
             Filter["ends_before"] = uni_encode_arg(request.args["ends_before"])
         if request.args.has_key("ends_after"):
             # Ensure the format is correct
-            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["ends_after"]):
+            if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.args["ends_after"]):
                 raise InvalidInputError
             Filter["ends_after"] = uni_encode_arg(request.args["ends_after"])
         if request.args.has_key("id"):
