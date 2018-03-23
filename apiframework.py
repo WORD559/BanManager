@@ -70,6 +70,8 @@ class API(object):
                                                mimetype="image/jpeg")
                 except InvalidInputError:
                     return json.dumps({"status":"BAD","error":"There are invalid characters in your input. Please try again."})
+                except InvalidDateError:
+                    return json.dumps({"status":"BAD","error":"The end date is before the start date."})
 
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):

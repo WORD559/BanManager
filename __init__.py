@@ -613,7 +613,7 @@ def add_new_sanction(request):
         dt_end = datetime.date(int(end_date[0:4]),int(end_date[5:7]),int(end_date[8:10]))
         dt_start = datetime.date(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]))
         if (dt_end < dt_start):
-            raise InvalidInputError
+            raise InvalidDateError
     # Get the private key
     key = get_private_key(request)
 
@@ -1011,14 +1011,14 @@ def modify_sanction(request):
             dt_end = cur.fetchall()[0][0]
             dt_start = datetime.date(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]))
             if (dt_end < dt_start):
-                raise InvalidInputError
+                raise InvalidDateError
             columns.append("StartDate = '{start_date}'".format(**{"start_date":start_date}))
         if end_date:
             cur.execute("SELECT StartDate FROM Sanctions WHERE SanctionID = {id}".format(**{"AES":aes_key,"id":ID}))
             dt_start = cur.fetchall()[0][0]
             dt_end = datetime.date(int(end_date[0:4]),int(end_date[5:7]),int(end_date[8:10]))
             if (dt_end < dt_start):
-                raise InvalidInputError
+                raise InvalidDateError
             columns.append("EndDate = '{end_date}'".format(**{"end_date":end_date}))
         if len(columns) > 0:
             query = "UPDATE Sanctions SET "+", ".join(columns)+" WHERE SanctionID = {id}".format(**{"id":ID})

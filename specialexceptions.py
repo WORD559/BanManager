@@ -23,3 +23,6 @@ class PhotoError(Exception):
 
 class InvalidInputError(Exception):
     pass
+
+class InvalidDateError(Exception):
+    pass
