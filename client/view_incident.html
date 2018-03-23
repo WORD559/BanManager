@@ -23,18 +23,22 @@ function get_incidents(data) {
     incident = params["id"][0];
     document.title = "Incident "+incident+"|BanManager";
     incident = incidents.filter(function (i) {return (i["ID"] == incident);})[0];
-    if (incident != undefined) {
-        MakeAsyncRequest("GET","/api/v1/query_sanction",get_sanctions);
-    } else {
-        document.getElementById("incident_info").innerHTML = "Incident does not exist!";
-    }
+    MakeAsyncRequest("GET","/api/v1/query_sanction",get_sanctions);
 }
 function get_sanctions(data) {
     var response = JSON.parse(data);
     sanctions = response["data"];
     sanction = sanctions.filter(function (i) {return (i["IncidentID"] == incident["ID"])})[0];
+    var incident_count = document.getElementById("incidents");
+    incident_count.innerHTML = (incidents.length - sanctions.length);
     // We may need usernames in order to populate a select field
-    MakeAsyncRequest("GET","/api/v1/query_student",get_students);
+    if (incident != undefined) {
+        MakeAsyncRequest("GET","/api/v1/query_student",get_students);
+    } else {
+        document.getElementById("incident_info").innerHTML = "Incident does not exist!";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
+    }
 }
 function get_students(data) {
     var response = JSON.parse(data);
@@ -42,8 +46,6 @@ function get_students(data) {
     render();
 }
 function render() {
-    var incident_count = document.getElementById("incidents");
-    incident_count.innerHTML = (incidents.length - sanctions.length);
     
     var loader = document.getElementById("ajax-loader");
     
