@@ -610,7 +610,10 @@ def add_new_sanction(request):
         if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["end_date"]):
             raise InvalidInputError
         end_date = sql_sanitise(uni_encode_arg(request.form["end_date"]))
-
+        dt_end = datetime.date(int(end_date[0:4]),int(end_date[5:7]),int(end_date[8:10]))
+        dt_start = datetime.date(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]))
+        if (dt_end < dt_start):
+            raise InvalidInputError
     # Get the private key
     key = get_private_key(request)
 
@@ -996,21 +999,31 @@ def modify_sanction(request):
         return json.dumps({"status":"OK","data":"Sanction {id} deleted.".format(**{"id":ID})})
     # Otherwise, this is a modify request, so use UPDATE
     else:
+        db = connect_db()
+        cur = db.cursor()
         columns = []
         if new:
             columns.append("IncidentID = {new}".format(**{"new":new}))
         if sanction:
             columns.append("Sanction = AES_ENCRYPT('{sanction}','{AES}')".format(**{"sanction":sanction,"AES":aes_key}))
         if start_date:
+            cur.execute("SELECT EndDate FROM Sanctions WHERE SanctionID = {id}".format(**{"AES":aes_key,"id":ID}))
+            dt_end = cur.fetchall()[0][0]
+            dt_start = datetime.date(int(start_date[0:4]),int(start_date[5:7]),int(start_date[8:10]))
+            if (dt_end < dt_start):
+                raise InvalidInputError
             columns.append("StartDate = '{start_date}'".format(**{"start_date":start_date}))
         if end_date:
+            cur.execute("SELECT StartDate FROM Sanctions WHERE SanctionID = {id}".format(**{"AES":aes_key,"id":ID}))
+            dt_start = cur.fetchall()[0][0]
+            dt_end = datetime.date(int(end_date[0:4]),int(end_date[5:7]),int(end_date[8:10]))
+            if (dt_end < dt_start):
+                raise InvalidInputError
             columns.append("EndDate = '{end_date}'".format(**{"end_date":end_date}))
         if len(columns) > 0:
             query = "UPDATE Sanctions SET "+", ".join(columns)+" WHERE SanctionID = {id}".format(**{"id":ID})
         else:
             return json.dumps({"status":"OK"})
-        db = connect_db()
-        cur = db.cursor()
         cur.execute(query)
         db.commit()
         cur.close()
