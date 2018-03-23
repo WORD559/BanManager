@@ -123,6 +123,11 @@ function render() {
     if (user_rank <= 1) {
         punishment.insertCell(2).innerHTML = "<button id=\"sanction_button\" onclick=\"edit('sanction'); return false;\">Edit</button>";}
     
+    if (user_rank <= 1) {    
+        var delete_button = table.insertRow(-1);
+    delete_button.insertCell(0).innerHTML = "<button id=\"delete_button\" onclick=\"delete_sanction(); return false;\">Delete Sanction</button>";
+    }
+    
     output.appendChild(table);
     loader.parentNode.removeChild(loader);
 }
@@ -194,13 +199,19 @@ function add_sanction() {
 }
 function add_sanction_callback(data) {
     var response = JSON.parse(data);
-    var form = document.getElementById("sanction_form");
     if (response["status"] == "OK") {
         location.reload();
     } else {
         UnsetAjaxLoader("submit_button","Submit",add_sanction);
         document.getElementById("note").innerHTML = response["error"];
     }
+}
+function delete_sanction(data) {
+    var button = document.getElementById("delete_button");
+    SetAjaxLoader(button);
+    var data = encodeFormData({id:sanction["ID"],
+                               delete:true});
+    MakeAsyncRequest("POST","/api/v1/modify_sanction",add_sanction_callback,data,"application/x-www-form-urlencoded");
 }
 check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_incident",get_incidents)},false);
 </script>
