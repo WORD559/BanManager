@@ -70,7 +70,7 @@ def initialise(request):
     try:
         defaults = configman.read("config/defaults.cnf")
         DATABASE_NAME = defaults["DATABASE_NAME"]
-        MAX_USERNAME_CHARS = int(defaults["MAX_USERNAME_CHARS"])
+        MAX_USERNAME_LENGTH = int(defaults["MAX_USERNAME_LENGTH"])
         MAX_FORENAME_LENGTH = int(defaults["MAX_FORENAME_LENGTH"])
         MAX_SURNAME_LENGTH = int(defaults["MAX_SURNAME_LENGTH"])
         MAX_LOGIN_LENGTH = int(defaults["MAX_LOGIN_LENGTH"])
@@ -123,7 +123,7 @@ def initialise(request):
 
         #Username, forename, surname are encrypted
         cur.execute("CREATE TABLE Students "+\
-                    "(Username VARBINARY({max_username_chars}) PRIMARY KEY NOT NULL,".format(**{"max_username_chars":get_AES_size(MAX_USERNAME_CHARS)})+\
+                    "(Username VARBINARY({max_username_length}) PRIMARY KEY NOT NULL,".format(**{"max_username_length":get_AES_size(MAX_USERNAME_LENGTH)})+\
                     "Forename VARBINARY({max_forename_length}),".format(**{"max_forename_length":get_AES_size(MAX_FORENAME_LENGTH)})+\
                     "Surname VARBINARY({max_surname_length}),".format(**{"max_surname_length":get_AES_size(MAX_SURNAME_LENGTH)})+\
                     "PhotoID INTEGER NOT NULL AUTO_INCREMENT UNIQUE);")
@@ -132,7 +132,7 @@ def initialise(request):
         #Username, report are encrypted
         cur.execute("CREATE TABLE Incidents "+\
                     "(IncidentID INTEGER PRIMARY KEY NOT NULL AUTO_INCREMENT,"+\
-                    "Username VARBINARY({max_username_chars}) NOT NULL,".format(**{"max_username_chars":get_AES_size(MAX_USERNAME_CHARS)})+\
+                    "Username VARBINARY({max_username_length}) NOT NULL,".format(**{"max_username_length":get_AES_size(MAX_USERNAME_LENGTH)})+\
                     "Report BLOB,"+\
                     "Date DATE,"+\
                     "FOREIGN KEY (Username) REFERENCES Students(Username));")
@@ -164,7 +164,7 @@ def initialise(request):
         #try:
         cur.execute("CREATE TABLE FileKeys "+\
                     "(Login VARCHAR({max_login_length}) NOT NULL,".format(**{"max_login_length":MAX_LOGIN_LENGTH})+\
-                    "FileID VARCHAR({max_username_chars}) NOT NULL,".format(**{"max_username_chars":MAX_USERNAME_CHARS})+\
+                    "FileID VARCHAR({max_username_length}) NOT NULL,".format(**{"max_username_length":MAX_USERNAME_LENGTH})+\
                     "DecryptionKey BLOB NOT NULL,"+\
                     "PRIMARY KEY (Login, FileID));")
         # File will either be a student's username (for their photo) or a short reference meaning the database
@@ -300,7 +300,7 @@ def add_new_student(request):
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = uni_encode_arg(request.form["user"].lower()[:int(cfg["MAX_USERNAME_CHARS"])]).replace(" ","_")
+        student = uni_encode_arg(request.form["user"].lower()[:int(cfg["MAX_USERNAME_LENGTH"])]).replace(" ","_")
         # Ensure there are no symbols except dashes and underscores
         if not re.match("^[A-Za-z0-9_-]*$",student):
             raise InvalidInputError
