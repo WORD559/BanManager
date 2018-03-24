@@ -67,6 +67,7 @@ function render(data) {
         document.getElementById("forename_button").innerHTML = "<button onclick=\"edit('forename'); return false;\">Edit</button>";
         document.getElementById("surname_button").innerHTML = "<button onclick=\"edit('surname'); return false;\">Edit</button>";
         document.getElementById("photo_button").innerHTML = "<button onclick=\"edit_photo(); return false;\">Change Photo</button>";
+        document.getElementById("delete_photo_button").innerHTML = "<button onclick=\"delete_photo(); return false;\" id=\"delete_photo\">Delete Photo</button>";
     }
     
     
@@ -115,7 +116,11 @@ function submit_edit(row) {
             if (row != "new_user") {
                 location.reload();
             } else {
-                window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"]);
+                if (data["new_user"] == "") {
+                    document.getElementById("edit_status").innerHTML = "Missing username.";
+                } else {
+                    window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"]);
+                }
             }
         } else {
             document.getElementById("edit_status").innerHTML = response["error"];
@@ -147,6 +152,17 @@ function submit_photo() {
     data.append("user",student["Username"]);
     MakeAsyncRequest("POST","/api/v1/modify_student",callback,data,null);
 }
+function delete_photo() {
+    function callback(data) {
+        var response = JSON.parse(data);
+        if (response["status"] == "OK") {
+            location.reload();
+        }
+    }
+    SetAjaxLoader(document.getElementById("delete_photo"));
+    MakeAsyncRequest("POST","/api/v1/modify_student",callback,encodeFormData({user:student["Username"],
+    delete_photo:true}),"application/x-www-form-urlencoded");
+}
 </script>
 </head>
 
@@ -158,7 +174,7 @@ function submit_photo() {
 <div id="student_info">
 <table id="student+photo">
 <tr>
-<td id="photo"><p>Hover over photo to enlarge</p><p id="photo_button"></p></td>
+<td id="photo"><p>Hover over photo to enlarge</p><p><span id="photo_button"></span><span id="delete_photo_button"></span></p></td>
 <td>
 <table id="student_table">
 <tr>
