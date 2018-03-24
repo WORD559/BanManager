@@ -119,7 +119,7 @@ function submit_edit(row) {
                 if (data["new_user"] == "") {
                     document.getElementById("edit_status").innerHTML = "Missing username.";
                 } else {
-                    window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"]);
+                    window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"].substr(0,max_username_length));
                 }
             }
         } else {

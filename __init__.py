@@ -40,14 +40,15 @@ def uni_encode_arg(x):
 @api.route("status")
 def status(request):
     data = {}
+    cfg = configman.read("config/defaults.cnf")
     if "SQLusers.cnf" not in os.listdir("config"):
         data["initialised"] = False
     elif int(configman.read("config/SQLusers.cnf")["initialised"]) == 0:
         data["initialised"] = False
     else:
         data["initialised"] = True
-        data["account_deletion"] = bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))
-
+        data["account_deletion"] = bool(int(cfg["USERS_CAN_DELETE_THEMSELVES"]))
+        data["max_username_length"] = int(cfg["MAX_USERNAME_LENGTH"])
         try:
             get_private_key(request) # This will let me check to see if they're logged in
             data["logged_in"] = True

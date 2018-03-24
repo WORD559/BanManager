@@ -1,5 +1,6 @@
 var user_rank;
 var can_delete_account;
+var max_username_length;
 function check_logged_in(f,fetch_incidents=true) { 
     function login_callback(data) {
         var response = JSON.parse(data);
@@ -17,6 +18,7 @@ function check_logged_in(f,fetch_incidents=true) {
         } else {
             can_delete_account = false;
         }
+        max_username_length = response["data"]["max_username_length"];
         f();
     }
     MakeAsyncRequest("GET","/api/v1/status",login_callback);
