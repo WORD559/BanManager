@@ -306,14 +306,14 @@ def add_new_student(request):
     if request.form.has_key("forename"):
         forename = uni_encode_arg(request.form["forename"])
         # Ensure there are no symbols except dashes
-        if not re.match("^[A-Za-z0-9-]*$",forename):
+        if not re.match("^[A-Za-z-]*$",forename):
             raise InvalidInputError
     else:
         forename = None
     if request.form.has_key("surname"):
         surname = uni_encode_arg(request.form["surname"])
         # Ensure there are no symbols except dashes
-        if not re.match("^[A-Za-z0-9-]*$",surname):
+        if not re.match("^[A-Za-z-]*$",surname):
             raise InvalidInputError
     else:
         surname = None
@@ -785,14 +785,14 @@ def modify_user(request):
         forename = None
     else:
         # Ensure there are no symbols except dashes
-        if not re.match("^[A-Za-z0-9-]*$",request.form["forename"]):
+        if not re.match("^[A-Za-z-]*$",request.form["forename"]):
             raise InvalidInputError
         forename = sql_sanitise(uni_encode_arg(request.form["forename"]),underscore=False,percent=False)
     if not (request.form.has_key("surname")):
         surname = None
     else:
         # Ensure there are no symbols except dashes
-        if not re.match("^[A-Za-z0-9-]*$",request.form["surname"]):
+        if not re.match("^[A-Za-z-]*$",request.form["surname"]):
             raise InvalidInputError
         surname = sql_sanitise(uni_encode_arg(request.form["surname"]),underscore=False,percent=False)
     if request.files.has_key("photo"):
@@ -849,10 +849,14 @@ def modify_user(request):
             if new:
                 # We need to disable foreign key checks in order to modify the username, since it is a foreign key in incidents
                 cur.execute("SET foreign_key_checks = 0;")
-                query = "UPDATE Incidents SET Username = AES_ENCRYPT('{new}','{AES}') WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"new":new,"user":student,"AES":aes_key})
-                cur.execute(query)
-                db.commit()
                 query = "UPDATE Students SET "+", ".join(columns)+" WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"user":student,"AES":aes_key})
+                try:
+                    cur.execute(query)
+                except MySQLdb.IntegrityError:
+                    cur.execute("SET foreign_key_checks = 1;")
+                    raise RecordExistsError
+                db.commit()
+                query = "UPDATE Incidents SET Username = AES_ENCRYPT('{new}','{AES}') WHERE AES_DECRYPT(Username,'{AES}') = '{user}';".format(**{"new":new,"user":student,"AES":aes_key})
                 cur.execute(query)
                 db.commit()
                 cur.execute("SET foreign_key_checks = 1;")
@@ -868,7 +872,6 @@ def modify_user(request):
             cur = db.cursor()
             photoID = get_photoID(student,aes_key,cur)
             
-    
             if photo != None:
                 filekey = upload_file(photo,photoID,db,cur)
                 if not filekey:
