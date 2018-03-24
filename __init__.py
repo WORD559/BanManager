@@ -293,25 +293,26 @@ def user_login(request):
 @api.route("add_new_student",["POST"])
 def add_new_student(request):
     #sql_cfg = get_SQL_config()
+    cfg = configman.read("config/defaults.cnf")
     user = get_username(request)
     if get_rank(user) > 2: # If not a prefect
         raise RankError
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
-        student = uni_encode_arg(request.form["user"].lower()).replace(" ","_")
+        student = uni_encode_arg(request.form["user"].lower()[:int(cfg["MAX_USERNAME_CHARS"])]).replace(" ","_")
         # Ensure there are no symbols except dashes and underscores
         if not re.match("^[A-Za-z0-9_-]*$",student):
             raise InvalidInputError
     if request.form.has_key("forename"):
-        forename = uni_encode_arg(request.form["forename"])
+        forename = uni_encode_arg(request.form["forename"][:int(cfg["MAX_FORENAME_LENGTH"])])
         # Ensure there are no symbols except dashes
         if not re.match("^[A-Za-z-]*$",forename):
             raise InvalidInputError
     else:
         forename = None
     if request.form.has_key("surname"):
-        surname = uni_encode_arg(request.form["surname"])
+        surname = uni_encode_arg(request.form["surname"][:int(cfg["MAX_SURNAME_LENGTH"])])
         # Ensure there are no symbols except dashes
         if not re.match("^[A-Za-z-]*$",surname):
             raise InvalidInputError
@@ -465,7 +466,7 @@ def add_new_incident(request):
     if not (request.form.has_key("report")):
         return json.dumps({"status":"BAD","error":"Missing report."})
     else:
-        report = sql_sanitise(uni_encode_arg(request.form["report"]),underscore=False,percent=False)
+        report = sql_sanitise(uni_encode_arg(request.form["report"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = datetime.date.today().strftime("%Y-%m-%d")
     else:
@@ -595,7 +596,7 @@ def add_new_sanction(request):
     if not (request.form.has_key("sanction")):
         return json.dumps({"status":"BAD","error":"Missing sanction."})
     else:
-        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"]),underscore=False,percent=False)
+        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = datetime.date.today().strftime("%Y-%m-%d")
     else:
@@ -757,6 +758,7 @@ def sanction_query(request):
 
 @api.route("modify_student",["POST"])
 def modify_user(request):
+    cfg = configman.read("config/defaults.cnf")
     user = get_username(request)
     if get_rank(user) > 2: # If not a prefect
         raise RankError
@@ -780,21 +782,21 @@ def modify_user(request):
         # Ensure there are no symbols except dashes and underscores
         if not re.match("^[A-Za-z0-9_-]*$",request.form["new_user"]):
             raise InvalidInputError
-        new = sql_sanitise(uni_encode_arg(request.form["new_user"]),underscore=False,percent=False).lower()
+        new = sql_sanitise(uni_encode_arg(request.form["new_user"][:int(cfg["MAX_USERNAME_LENGTH"])]),underscore=False,percent=False).lower()
     if not (request.form.has_key("forename")):
         forename = None
     else:
         # Ensure there are no symbols except dashes
         if not re.match("^[A-Za-z-]*$",request.form["forename"]):
             raise InvalidInputError
-        forename = sql_sanitise(uni_encode_arg(request.form["forename"]),underscore=False,percent=False)
+        forename = sql_sanitise(uni_encode_arg(request.form["forename"][:int(cfg["MAX_FORENAME_LENGTH"])]),underscore=False,percent=False)
     if not (request.form.has_key("surname")):
         surname = None
     else:
         # Ensure there are no symbols except dashes
         if not re.match("^[A-Za-z-]*$",request.form["surname"]):
             raise InvalidInputError
-        surname = sql_sanitise(uni_encode_arg(request.form["surname"]),underscore=False,percent=False)
+        surname = sql_sanitise(uni_encode_arg(request.form["surname"][:int(cfg["MAX_SURNAME_LENGTH"])]),underscore=False,percent=False)
     if request.files.has_key("photo"):
         photo = request.files["photo"]
     else:
@@ -908,7 +910,7 @@ def modify_incident(request):
     if not (request.form.has_key("report")):
         report = None
     else:
-        report = sql_sanitise(uni_encode_arg(request.form["report"]),underscore=False,percent=False)
+        report = sql_sanitise(uni_encode_arg(request.form["report"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
         date = None
     else:
@@ -974,7 +976,7 @@ def modify_sanction(request):
     if not (request.form.has_key("sanction")):
         sanction = None
     else:
-        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"]),underscore=False,percent=False)
+        sanction = sql_sanitise(uni_encode_arg(request.form["sanction"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
         start_date = None
     else:
@@ -1109,13 +1111,14 @@ def change_password(request):
 
 @api.route("add_new_account",["POST"])
 def create_account(request):
+    cfg = configman.read("config/defaults.cnf")
     if not (request.form.has_key("user")):
         return json.dumps({"status":"BAD","error":"Missing username."})
     else:
         # Ensure there are no symbols except dashes and underscores
         if not re.match("^[A-Za-z0-9_-]*$",request.form["user"]):
             raise InvalidInputError
-        username = uni_encode_arg(request.form["user"])
+        username = uni_encode_arg(request.form["user"][:int(cfg["MAX_LOGIN_LENGTH"])])
     if not (request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing password."})
     else:
@@ -1123,6 +1126,8 @@ def create_account(request):
     if not (request.form.has_key("rank")):
         return json.dumps({"status":"BAD","error":"Missing rank."})
     else:
+        if not re.match("^\d*$",request.form["rank"]):
+            raise InvalidInputError
         rank = int(request.form["rank"])
         
     user = get_username(request)
