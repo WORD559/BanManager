@@ -13,15 +13,9 @@ var students;
 var student;
 function get_incidents(data) {
     var response = JSON.parse(data);
-    students = response["data"];
-    var params = getURLParams(window.location.href);
-    if (!params.hasOwnProperty("username")) {
-        document.getElementById("student_info").innerHTML = "Student does not exist!";
-        document.getElementById("student_incidents").innerHTML = "";
-        return;
-    }
-    student = params["username"][0].toLowerCase();
-    student = students.filter(function (i) {return (i["Username"] == student);})[0];
+    student = response["data"][0];
+    
+    //student = students.filter(function (i) {return (i["Username"] == student);})[0];
     if (student == undefined) {
         document.getElementById("student_info").innerHTML = "Student does not exist!";
         document.getElementById("student_incidents").innerHTML = "";
@@ -78,13 +72,13 @@ function render(data) {
     
     var incident_table = document.getElementById("incidents_table");
     var filtered_incidents = incidents.filter(function (i) {return (i["Username"] == student["Username"]);});
-    console.log(filtered_incidents);
+    //console.log(filtered_incidents);
     var incident_ids = filtered_incidents.map(function (i) {return i["ID"];});
-    console.log(incident_ids);
+    //console.log(incident_ids);
     var filtered_sanctions = sanctions.filter(function (i) {return (incident_ids.indexOf(i["IncidentID"]) != -1);});
-    console.log(filtered_sanctions);
+    //console.log(filtered_sanctions);
     var sanction_incident_ids = filtered_sanctions.map(function (i) {return i["IncidentID"];});
-    console.log(sanction_incident_ids);
+    //console.log(sanction_incident_ids);
     for (var i = 0;i < filtered_incidents.length;i++) {
         var row = incident_table.insertRow(-1);
         row.id = "incident_"+i;
@@ -151,7 +145,6 @@ function submit_photo() {
     data.append("user",student["Username"]);
     MakeAsyncRequest("POST","/api/v1/modify_student",callback,data,null);
 }
-check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_incidents);},false);
 </script>
 </head>
 
@@ -192,4 +185,17 @@ check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student",get_
 </div>
 
 </body>
+<!-- has to be after the page loads --> 
+<script>
+var params = getURLParams(window.location.href);
+if (!params.hasOwnProperty("username") || params["username"][0] == "") {
+    document.getElementById("student_info").innerHTML = "Student does not exist!";
+    document.getElementById("student_incidents").innerHTML = "";
+    var loader = document.getElementById("ajax-loader");
+    loader.parentNode.removeChild(loader);
+} else {
+    student = params["username"][0].toLowerCase();
+    check_logged_in(function () {MakeAsyncRequest("GET","/api/v1/query_student?user="+encodeURIComponent(student),get_incidents);},false);
+}
+</script>
 </html>
