@@ -7,24 +7,32 @@
 <script type="text/javascript" src="/makeasync.js"></script>
 <script type="text/javascript" src="/banman.js"></script>
 <script>
-function get_current_sanctions() {
-    // we need the current date so we can get everyone who's banned until after today
-    var today = new Date();
-    var day = today.getDate();
-    var month = today.getMonth() + 1;
-    var year = today.getFullYear();
+function get_yyyymmdd(date) {
+    var day = date.getDate();
+    var month = date.getMonth() + 1;
+    var year = date.getFullYear();
     if (day < 10) {
         day = "0" + day;
     }
     if (month < 10) {
         month = "0" + month;
     }
-    var yyyymmdd = year+"-"+month+"-"+day;
-    MakeAsyncRequest("GET","/api/v1/query_sanction?ends_after="+yyyymmdd,get_incidents);
+    return year+"-"+month+"-"+day;
+}
+function get_current_sanctions() {
+    // we need the current date so we can get everyone who's banned until after today
+    var today = new Date();
+    var yyyymmdd = get_yyyymmdd(today);
+    var tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    var tomorrdd = get_yyyymmdd(tomorrow);
+    
+    MakeAsyncRequest("GET","/api/v1/query_sanction?ends_after="+yyyymmdd+"&starts_before="+tomorrdd,get_incidents);
 }
 function get_incidents(data) {
     var response = JSON.parse(data);
     // we need to get all the incident IDs from the sanctions
+    console.log(response);
     var incidents = response["data"].map(function (i) { return i["IncidentID"]; } );
     sanctions = response["data"].map(function (i) { return i["Sanction"]; });
     if (incidents.length > 0) {
