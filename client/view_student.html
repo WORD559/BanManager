@@ -117,6 +117,8 @@ function submit_edit(row) {
             } else {
                 window.location = "/students/view_student?username="+encodeURIComponent(data["new_user"]);
             }
+        } else {
+            document.getElementById("edit_status").innerHTML = response["error"];
         }
     }
     var field = document.getElementById(row);
@@ -169,6 +171,7 @@ function submit_photo() {
 </table>
 </tr>
 </table>
+<p id="edit_status"></p>
 </div>
 <div id="student_incidents">
 <p>Incidents</p>
