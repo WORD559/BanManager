@@ -12,6 +12,7 @@ from flask_cors import CORS
 import configman
 from configman import ConfigError
 from specialexceptions import *
+from MySQLdb import DataError
 import os
 import json
 
@@ -72,6 +73,8 @@ class API(object):
                     return json.dumps({"status":"BAD","error":"There are invalid characters in your input. Please try again."})
                 except InvalidDateError:
                     return json.dumps({"status":"BAD","error":"The end date is before the start date."})
+                except DataError,e: # Return the actual DataError as it contains column names
+                    return json.dumps({"status":"BAD","error":e[1]})
 
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):
