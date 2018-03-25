@@ -1188,6 +1188,9 @@ def delete_account(request):
     
     db = connect_db()
     cur = db.cursor()
+    # We should first ensure that the account we are trying to delete exists
+    if cur.execute("SELECT * FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)})) == 0:
+        return json.dumps({"status":"BAD","error":"User does not exist."})
     # If the user is an admin, we need to be sure they're not the only remaining admin
     if get_rank(username) == 0:
         if cur.execute("SELECT * FROM Accounts WHERE AccountType = 0;") <= 1:
@@ -1205,7 +1208,8 @@ def delete_account(request):
         h = hasher.digest()
         passwd = None
         if h != server_h:
-            raise AuthenticationError
+            #raise AuthenticationError
+            return json.dumps({"status":"BAD","error":"Incorrect password."})
     # Now we can actually delete the account
     cur.execute("DELETE FROM FileKeys WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))
     cur.execute("DELETE FROM Accounts WHERE Login = '{user}';".format(**{"user":sql_sanitise(username)}))

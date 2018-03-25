@@ -75,7 +75,7 @@ class API(object):
                     return json.dumps({"status":"BAD","error":"The end date is before the start date."})
                 except DataError,e: # Return the actual DataError as it contains column names
                     return json.dumps({"status":"BAD","error":e[1]})
-
+                
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):
         def decorator(function):
