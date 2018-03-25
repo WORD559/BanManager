@@ -280,3 +280,15 @@ def add_new_filekey(fileID,filekey,db,cur):
         e_filekey = key.encrypt(filekey.encode("hex"),0)[0].encode("hex") # If we hex-encode it, it will be compatible with out get_file_key function
         cur.execute("INSERT INTO FileKeys VALUES ('{user}','{file}',UNHEX('{key}'));".format(**{"user":user,"file":fileID,"key":sql_sanitise(e_filekey)}))
     db.commit()
+
+def date_to_string(date):
+    year = str(date.year)
+    while len(year) < 4:
+        year = "0" + year
+    month = str(date.month)
+    while len(month) < 2:
+        month = "0" + month
+    day = str(date.day)
+    while len(day) < 2:
+        day = "0" + day
+    return year+"-"+month+"-"+day

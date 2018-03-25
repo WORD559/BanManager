@@ -469,7 +469,7 @@ def add_new_incident(request):
     else:
         report = sql_sanitise(uni_encode_arg(request.form["report"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("date")):
-        date = datetime.date.today().strftime("%Y-%m-%d")
+        date = date_to_string(datetime.date.today())
     else:
         # Ensure the format is correct
         if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["date"]):
@@ -579,7 +579,7 @@ def incident_query(request):
     cur.execute(query)
     data = list(cur.fetchall())
     for row in range(len(data)):
-        data[row] = {"ID":data[row][0],"Username":data[row][1],"Report":data[row][2],"Date":data[row][3].strftime("%Y-%m-%d")}
+        data[row] = {"ID":data[row][0],"Username":data[row][1],"Report":data[row][2],"Date":date_to_string(data[row][3])}
     cur.close()
     db.close()
 
@@ -599,7 +599,7 @@ def add_new_sanction(request):
     else:
         sanction = sql_sanitise(uni_encode_arg(request.form["sanction"][:65535]),underscore=False,percent=False)
     if not (request.form.has_key("start_date")):
-        start_date = datetime.date.today().strftime("%Y-%m-%d")
+        start_date = date_to_string(datetime.date.today())
     else:
         # Ensure the format is correct
         if not re.match("^\d\d\d\d-\d\d-\d\d*$",request.form["start_date"]):
@@ -751,7 +751,7 @@ def sanction_query(request):
     cur.execute(query)
     data = list(cur.fetchall())
     for row in range(len(data)):
-        data[row] = {"ID":data[row][0],"StartDate":data[row][1].strftime("%Y-%m-%d"),"EndDate":data[row][2].strftime("%Y-%m-%d"),"Sanction":data[row][3],"IncidentID":data[row][4]}
+        data[row] = {"ID":data[row][0],"StartDate":date_to_string(data[row][1]),"EndDate":date_to_string(data[row][2]),"Sanction":data[row][3],"IncidentID":data[row][4]}
     cur.close()
     db.close()
 
