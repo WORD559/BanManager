@@ -81,9 +81,9 @@ function delete_account() {
                 status_note.innerHTML = "Deleted '"+data["user"]+"'.";
             }
         } else {
-            UnsetAjaxLoader("delete_account_button","Delete Account",delete_account);
             status_note.innerHTML = response["error"];
         }
+        UnsetAjaxLoader("delete_account_button","Delete Account",delete_account);
     }
     var button = document.getElementById("delete_account_button");
     SetAjaxLoader(button);
