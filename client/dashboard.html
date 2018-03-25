@@ -32,7 +32,7 @@ function get_current_sanctions() {
 function get_incidents(data) {
     var response = JSON.parse(data);
     // we need to get all the incident IDs from the sanctions
-    console.log(response);
+    //console.log(response);
     var incidents = response["data"].map(function (i) { return i["IncidentID"]; } );
     sanctions = response["data"].map(function (i) { return i["Sanction"]; });
     if (incidents.length > 0) {
