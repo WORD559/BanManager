@@ -5,6 +5,12 @@
 <link rel="shortcut icon" href="/banman.ico" type="image/x-icon" />
 <script type="text/javascript" src="/makeasync.js"></script>
 <script>
+function status_callback(data) {
+    var response = JSON.parse(data);
+    if ((response["data"]["initialised"])) {
+        window.location = "/";
+    }
+}
 function setup_db() {
     var button = document.getElementById("submit_button");
     var form = button.parentNode;
@@ -17,15 +23,16 @@ function setup_db() {
 function setup_callback(data) {
     var response = JSON.parse(data);
     var f = document.getElementById("mysql_form");
-    if (response["data"]["initialised"]) {
+    if (response["status"] == "OK" && response["data"]["initialised"]) {
         f.parentNode.removeChild(f);
         document.getElementById("admin_pw").innerHTML = "Username: <code>admin</code><br>Password: <code>"+response["data"]["password"]+"</code><br><br>";
         document.getElementById("admin_note").innerHTML = "Please make a note of these login credentials. If you lose them, you will not be able to access the system.<br><br>You can now <a href='/login'>log in</a>.";
     } else {
-        document.getElementById("admin_note").innerHTML = "Your server credentials are incorrect. Please try again.";
+        document.getElementById("admin_note").innerHTML = response["error"];
         UnsetAjaxLoader("submit_button","Submit",setup_db);
     }
 }
+MakeAsyncRequest("GET","/api/v1/status",status_callback);
 </script>
 </head>
 <body>
