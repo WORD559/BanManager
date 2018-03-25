@@ -19,6 +19,8 @@ function get_incidents(data) {
     if (student == undefined) {
         document.getElementById("student_info").innerHTML = "Student does not exist!";
         document.getElementById("student_incidents").innerHTML = "";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
         return;
     }
     if (student["Forename"] != null && student["Surname"] != null) {
