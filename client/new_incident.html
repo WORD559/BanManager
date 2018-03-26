@@ -12,6 +12,8 @@ function check_rank() {
     var output = document.getElementById("incident_form");
     if (user_rank > 2) {
         output.innerHTML = "<p>You do not have permission to submit new incidents. <a href=\"/dash\">Return to the dashboard</a></p>";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
         return;
     }
     MakeAsyncRequest("GET","/api/v1/query_student",get_students);
