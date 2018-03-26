@@ -114,3 +114,5 @@ photos/*
 
 certificate.crt
 certkey.key
+
+code_exports/
