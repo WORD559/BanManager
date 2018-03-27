@@ -37,6 +37,7 @@ Below I have written the structure of the database used. Bold fields are primary
 |**Username** |VARBINARY|Yes       |
 |Forename     |VARBINARY|Yes       |
 |Surname      |VARBINARY|Yes       |
+|PhotoID      |INTEGER  |No        |
 
 ## Incidents
 |Field         |Datatype |Encrypted?|
