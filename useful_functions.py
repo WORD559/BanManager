@@ -184,9 +184,12 @@ def upload_file(f,ID,db,cur):
     upload_path = configman.read("config/defaults.cnf")["PHOTO_FOLDER"]
     # Secure name is semi-redundant because of ID, but I want to be safe from stupitidy and dodgy file extensions
     filename = secure_filename(str(ID)+".jpg")
+    try:
+        im = Image.open(f)
+        im = im.convert("RGB")
+    except:
+        return False
     delete_file(ID,db,cur)
-    im = Image.open(f)
-    im = im.convert("RGB")
     return encrypt_image(im,upload_path+"/"+filename)
 
 def delete_file(ID,db,cur):
