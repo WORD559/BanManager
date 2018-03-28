@@ -24,6 +24,8 @@ from Crypto.PublicKey import RSA
 app = Flask(__name__)
 CORS(app)
 app.config["SESSION_COOKIE_SECURE"] = True
+# We want to limit received data to 50MB so as not to overload the server.
+app.config['MAX_CONTENT_LENGTH'] = 50*(1024*1024*8)
 
 ##app = apiframework.app
 api = apiframework.API(app)
