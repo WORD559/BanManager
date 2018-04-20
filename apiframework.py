@@ -1,4 +1,4 @@
-##API Webserver
+    ##API Webserver
 
 # This is going to be a framework for building up the API, rather than the API
 # itself. My reasoning for this is that it allows a future developer to expand
@@ -79,10 +79,8 @@ class API(object):
     # Function decorator for defining an API route. The route name is the f passed to the main route.
     def route(self,name,methods=["GET"]):
         def decorator(function):
-            def wrapper():
-                return function
             self.functions[name] = (function,methods)
-            return wrapper()
+            return function
         return decorator
             
 class Client(object):

@@ -15,4 +15,4 @@ else
     G_PORT=$4
 fi
 
-PYTHONPATH=.. FLASK_APP=BanManager gunicorn --certfile $1 --keyfile $2 -b $G_HOSTNAME:$G_PORT BanManager:app
+PYTHONPATH=.. FLASK_APP=BanManager gunicorn --certfile $1 --keyfile $2 -b $G_HOSTNAME:$G_PORT -w 4 BanManager:app
