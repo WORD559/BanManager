@@ -193,6 +193,10 @@ These fields are encrypted with a 256-bit AES key in order to conform with the D
 * `forename` (optional): Student's forename.
 * `surname` (optional): Student's surname.
 
+*Files:*
+
+* `photo` (optional): Photograph of the student to be uploaded. This will be encrypted.
+
 ## /add_new_incident
 Adds a new incident that pertains to a particular student. The username must have already been added with `/add_new_student`. If the date is not specified, it defaults to the current date.
 
@@ -203,10 +207,6 @@ Adds a new incident that pertains to a particular student. The username must hav
 * `user`: Username of the student who the incident pertains to.
 * `report`: The report of the incident. This should detail what happened.
 * `date` (optional): The date of the incident, in YYYY-MM-DD format.
-
-*Files:*
-
-* `photo` (optional): Photograph of the student to be uploaded. This will be encrypted.
 
 ## /add_new_sanction
 Adds a new sanction in response to a particular incident. This requires a start and end date for the sanction (an "indefinite" sanction should just be a very far end date, for example 100 years). 
