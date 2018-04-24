@@ -1120,7 +1120,7 @@ def create_account(request):
         # Ensure there are no symbols except dashes and underscores
         if not re.match("^[A-Za-z0-9_-]*$",request.form["user"]):
             raise InvalidInputError
-        username = uni_encode_arg(request.form["user"][:int(cfg["MAX_LOGIN_LENGTH"])])
+        username = uni_encode_arg(request.form["user"][:int(cfg["MAX_LOGIN_LENGTH"])]).lower()
     if not (request.form.has_key("pass")):
         return json.dumps({"status":"BAD","error":"Missing password."})
     else:
@@ -1177,7 +1177,7 @@ def delete_account(request):
     if not (request.form.has_key("user")):
         username = user
     else:
-        username = request.form["user"]
+        username = request.form["user"].lower()
     if (username == user and bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))) or rank == 0: # This allows admins to do this for other users
         username = uni_encode_arg(request.form["user"])
     else:
