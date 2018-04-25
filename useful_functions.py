@@ -35,6 +35,7 @@ def get_SQL_config():
 # Adds a new user account to the database
 # This does NOT give them their FileKeys
 def add_new_account(username,password,level,db):
+    username = username.lower()
     level = int(level)
     hasher = SHA256.new()
     hasher.update(password)

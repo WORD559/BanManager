@@ -1175,11 +1175,11 @@ def delete_account(request):
     rank = get_rank(user)
     # Get the user's private key -- this verifies they are logged in
     if not (request.form.has_key("user")):
-        username = user
+        username = user.lower()
     else:
         username = request.form["user"].lower()
     if (username == user and bool(int(configman.read("config/defaults.cnf")["USERS_CAN_DELETE_THEMSELVES"]))) or rank == 0: # This allows admins to do this for other users
-        username = uni_encode_arg(request.form["user"])
+        username = uni_encode_arg(request.form["user"]).lower()
     else:
         raise RankError
     if (request.form.has_key("pass")):
