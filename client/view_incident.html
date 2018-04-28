@@ -23,6 +23,12 @@ function get_incidents(data) {
     incident = params["id"][0];
     document.title = "Incident "+incident+"|BanManager";
     incident = incidents.filter(function (i) {return (i["ID"] == incident);})[0];
+    if (incident == undefined) {
+        document.getElementById("incident_info").innerHTML = "Incident does not exist!";
+        var loader = document.getElementById("ajax-loader");
+        loader.parentNode.removeChild(loader);
+        return;
+    }
     MakeAsyncRequest("GET","/api/v1/query_sanction",get_sanctions);
 }
 function get_sanctions(data) {
